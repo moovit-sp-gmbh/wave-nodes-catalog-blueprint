@@ -1,0 +1,34 @@
+{
+  "name": "helmut-cloud-catalog",
+  "version": "1.0.0",
+  "description": "Base for node catalogs of the helmut.cloud platform",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moovit-sp-gmbh/helmut.cloud-catalog.git"
+  },
+  "keywords": [
+    "catalog",
+    "helmut.cloud",
+    "template",
+    "blueprint"
+  ],
+  "author": "MoovIT Software Products GmbH",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/moovit-sp-gmbh/helmut.cloud-catalog/issues"
+  },
+  "homepage": "https://github.com/moovit-sp-gmbh/helmut.cloud-catalog#readme",
+  "dependencies": {
+    "hcloud-sdk": "^14.13.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
+  }
+}
