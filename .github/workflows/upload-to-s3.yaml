@@ -1,0 +1,68 @@
+name: Upload catalog to S3
+
+on:
+  push:
+    tag:
+      - v*
+jobs:
+  upload-catalog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bundle
+        run: npm run bundle
+
+      - name: Aggregate node specifications
+        run: npm run build
+
+      - name: Extract catalog information
+        id: catalog-info
+        run: |
+          echo "name=$(node -e 'console.log(require("./bundle.js").default.name)')" >> "$GITHUB_OUTPUT"
+          echo "description=$(node -e 'console.log(require("./bundle.js").default.description)')" >> "$GITHUB_OUTPUT"
+          echo "logoUrl=$(node -e 'console.log(require("./bundle.js").default.logoUrl)')" >> "$GITHUB_OUTPUT"
+
+      - name: Setup upload folder
+        run: mkdir upload && cp ./bundle.js ./specification.json upload
+
+      - name: Extract version from tag
+        id: catalog-version
+        run: |
+          tag=${{ env.GITHUB_REF_NAME }}
+          version=${tag:1}
+          if [ -z $version ]; then version="0.0.0"; fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Upload catalog and update registry
+        id: upload
+        uses: moovit-sp-gmbh/hcloud-catalog-upload-action@main
+        with:
+          endpoint: <S3 endpoint>
+          bucket: <name of your S3 bucket>
+          public_endpoint: <S3 public read endpoint for the specified bucket>
+          region: <region of your S3 bucket>
+          access_key_id: ${{ secrets.<secret set in the GH repo> }}
+          secret_access_key: ${{ secrets.<secret set in the GH repo> }}
+          name: ${{ steps.catalog-info.outputs.name }}
+          description: ${{ steps.catalog-info.outputs.description }}
+          logo: ${{ steps.catalog-info.outputs.logoUrl }}
+          version: ${{ steps.catalog-version.outputs.version }}
+          source_dir: ${{ github.workspace }}/upload
+          dest_dir: "<your path>"
+          changelog: |
+            Nothing changed
+          dev: false
+          on_fail: delete
+
+      - name: Print catalog registry URL
+        run: echo ${{ steps.upload.outputs.url }}/index.json
