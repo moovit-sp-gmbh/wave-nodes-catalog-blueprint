@@ -9,7 +9,8 @@
   "scripts": {
     "bundle": "esbuild index.ts --bundle --format=cjs --platform=node --outfile=bundle.js",
     "build": "node scripts/build.mjs ../bundle.js",
-    "spec": "npm run bundle && node scripts/spec.mjs"
+    "spec": "npm run bundle && node scripts/spec.mjs",
+    "link": "curl http://localhost:6968/api/agent/v1/modules/dev-wave/wave/debug?waveNodeFolder=$(PWD)"
   },
   "repository": {
     "type": "git",
