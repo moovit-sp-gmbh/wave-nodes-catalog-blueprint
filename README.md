@@ -20,11 +20,11 @@ To test your nodes it is necessary to have a [helmut.cloud Agent](https://app.he
 
     npm run link
 
-After that you will need to paste the node specification in the search bar of the Stream Designer Studio. You can obtain this using the `npm run spec -- <name of your node>` script and copying the JSON object written to standard out.
+After that you will need to paste the node specification in the search bar of the Stream Designer Studio. You can obtain this using the `spec` script and copying the JSON written to standard out. The `--silent` argument is important to prevent npm from writing to stdout if you want to pipe or redirect the command output.
+
+    npm run --silent spec -- <name of your node>
 
 In the future this process will become more streamlined as we improve the external catalog development experience.
-
-> Note about linking: Because Node.js does some caching of imports certain changes may not be reflected until the agent is restarted even if linked. If it looks like some changes are not being applied to your catalog then restart the agent and relink.
 
 ## Publishing your catalog
 
@@ -35,5 +35,7 @@ Publishing your catalog will happen automatically whenever a new tag is pushed. 
 We recommend adding this repo as a remote so that you can make sure your catalog is up-to-date.
 
     git remote add blueprint https://github.com/moovit-sp-gmbh/wave-nodes-catalog-blueprint.git
+    git fetch blueprint
+    git rebase blueprint/main // You can also choose to merge instead of rebase
 
 As long as you make no changes to the `Node` and `Catalog` classes merge/rebase conflicts should be minimal. Should you need to extend these classes in anyway we recommend creating new classes that extend them to avoid future conflicts. The `index.ts` file can export an instance of any class that extends `Catalog`.
