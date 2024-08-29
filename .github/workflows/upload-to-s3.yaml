@@ -2,8 +2,9 @@ name: Upload catalog to S3
 
 on:
   push:
-    tag:
+    tags:
       - v*
+
 jobs:
   upload-catalog:
     runs-on: ubuntu-latest
