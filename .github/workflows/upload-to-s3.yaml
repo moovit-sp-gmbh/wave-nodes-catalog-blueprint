@@ -32,6 +32,7 @@ jobs:
           echo "name=$(node -e 'console.log(require("./bundle.js").default.name)')" >> "$GITHUB_OUTPUT"
           echo "description=$(node -e 'console.log(require("./bundle.js").default.description)')" >> "$GITHUB_OUTPUT"
           echo "logoUrl=$(node -e 'console.log(require("./bundle.js").default.logoUrl)')" >> "$GITHUB_OUTPUT"
+          echo "minimumEngineVersion=$(node -e 'console.log(require("./bundle.js").default.minimumEngineVersion)')" >> "$GITHUB_OUTPUT"
 
       - name: Setup upload folder
         run: mkdir upload && cp ./bundle.js ./specification.json upload
@@ -57,6 +58,7 @@ jobs:
           name: ${{ steps.catalog-info.outputs.name }}
           description: ${{ steps.catalog-info.outputs.description }}
           logo: ${{ steps.catalog-info.outputs.logoUrl }}
+          minimum_engine_version: ${{ steps.catalog-info.outputs.minimumEngineVersion }}
           version: ${{ steps.catalog-version.outputs.version }}
           source_dir: ${{ github.workspace }}/upload
           dest_dir: "<your path>"
