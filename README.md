@@ -24,6 +24,20 @@ After that you will need to paste the node specification in the search bar of th
 
     npm run --silent spec -- <name of your node>
 
+### Debugging
+
+To be able to step through the code of your nodes you will need to start up the agent via the `debug` script.
+
+    npm run debug
+
+This will launch a NodeJS process with the [--inspect flag](https://nodejs.org/en/learn/getting-started/debugging).
+
+Any debug client can be used to attach to this NodeJS process, but the easiest way is to start it inside a [Javascript Debug Terminal in VSCode](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_javascript-debug-terminal). After starting the agent, it is still necessary to run the `link` script in another terminal to be able to debug your own nodes.
+
+To keep iterating on your catalog with debug capabilities, use the `bundle:debug` script instead of the regular `bundle` script.
+
+    npm run bundle:debug
+
 In the future this process will become more streamlined as we improve the external catalog development experience.
 
 ## Publishing your catalog
