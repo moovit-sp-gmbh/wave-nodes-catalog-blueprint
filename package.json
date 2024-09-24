@@ -12,7 +12,8 @@
     "build": "node scripts/build.mjs ../bundle.js",
     "debug": "npm run bundle:debug && node scripts/debug.mjs",
     "spec": "npm run bundle && node scripts/spec.mjs",
-    "link": "curl http://localhost:6968/api/agent/v1/modules/dev-wave/wave/debug?waveNodeFolder=$(PWD)"
+    "link": "curl http://localhost:6968/api/agent/v1/modules/dev-wave/wave/debug?waveNodeFolder=$(PWD)",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -35,9 +36,11 @@
     "hcloud-sdk": "^14.13.2"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.13",
     "@types/node": "^22.0.0",
     "chalk": "^5.3.0",
-    "esbuild": "^0.23.0"
+    "esbuild": "^0.23.0",
+    "ts-jest": "^29.2.5"
   },
   "catalogProperties": {
     "specVersion": 1
