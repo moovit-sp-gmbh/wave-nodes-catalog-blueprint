@@ -59,3 +59,647 @@ We recommend adding this repo as a remote so that you can make sure your catalog
     git rebase blueprint/main // You can also choose to merge instead of rebase
 
 As long as you make no changes to the `Node` and `Catalog` classes merge/rebase conflicts should be minimal. Should you need to extend these classes in anyway we recommend creating new classes that extend them to avoid future conflicts. The `index.ts` file can export an instance of any class that extends `Catalog`.
+
+# Development of Nodes
+
+Each node should extend the abstract class Node.
+The **specification** field and the **execute()** method are mandatory for implementation.
+Additionally, this class contains a **wave** field that will be inserted at runtime and whose methods can be used to access and control the execution behavior of the current node.
+This class should be exportable by default to be available for use from outside:
+
+```typescript
+export default class SomeAction extends Node {
+    wave!: WaveHelper; // This property will be inserted at runtime don't implement it
+    specification: StreamNodeSpecificationV2 = { ... };
+    execute(): Promise<void> { ... };
+}
+```
+
+## Specification
+
+The specification defines the basic metadata required to publish a node in the catalog.
+Also, the input data that the node expects and the expected results that will be placed in the outputs should be described here.
+For more details, you can view the components of the specification in the SDK:
+
+```typescript
+import { StreamNodeSpecificationV2 } from "hcloud-sdk/lib/interfaces/high5";
+```
+
+### Version of the specification
+
+At this moment, version 2 of the node specification is relevant.
+To specify this - please use the **specVersion** field:
+
+```typescript
+specification: StreamNodeSpecificationV2 = {
+    specVersion: 2;
+    ...
+}
+```
+
+### Name
+
+In order to specify a name for the node - please use the **name** field.
+This name will be used in the Stream Designer Studio and on other pages of the helmut.cloud:
+
+```typescript
+specification: StreamNodeSpecificationV2 = {
+    name: "Prime numbers";
+    ...
+}
+```
+
+### Description
+
+A more detailed description of the function performed by the current node should be placed in the **description** text field:
+
+```typescript
+specification: StreamNodeSpecificationV2 = {
+    ...
+    description: "Calculates a series of prime numbers up to the given position and returns the last value in this series";
+    ...
+}
+```
+
+### Node category
+
+Please specify the **category** to which the current node will belong to:
+
+```typescript
+specification: StreamNodeSpecificationV2 = {
+    ...
+    category: "Math operations";
+    ...
+}
+```
+
+### Node version
+
+The node version must be set according to the defined **StreamSemanticVersion** type.
+This type includes the following fields:
+- major - changes effecting the user and are not backwards compatible (parameter changes);
+- minor - changes effecting the user but are backwards compatible (logic changes);
+- patch - changes not effecting the user (bug fixes);
+- changelog - array with descriptions for every change on the the node.
+
+```typescript
+import { StreamSemanticVersion } from "hcloud-sdk/lib/interfaces/high5";
+
+specification: StreamNodeSpecificationV2 = {
+    ...
+    version: {
+        major: 1,
+        minor: 0,
+        patch: 2,
+        changelog: ["fixed a bug in the definition of prime numbers", "optimized the calculation algorithm"]
+    } as StreamSemanticVersion;
+    ...
+}
+```
+
+### Author details
+
+Information about the author must be specified according to the **StreamNodeSpecificationAuthor** type.
+This type includes the following fields:
+- name
+- company
+- email
+
+```typescript
+import { StreamNodeSpecificationAuthor } from "hcloud-sdk/lib/interfaces/high5";
+
+specification: StreamNodeSpecificationV2 = {
+    ...
+    author: {
+        name: "John Smith",
+        company: "Acme Corp",
+        email: "john.smith@acmecorp.com"
+    } as StreamNodeSpecificationAuthor;
+    ...
+}
+```
+
+### Tags
+
+You can specify an array of tags that must contain one of the listed values (this is an optional field of the specification):
+- PREVIEW,
+- EXPERIMENTAL.
+
+```typescript
+import { StreamNodeSpecificationTag } from "hcloud-sdk/lib/interfaces/high5";
+
+specification: StreamNodeSpecificationV2 = {
+    ...
+    tag: [StreamNodeSpecificationTag.PREVIEW];
+    ...
+}
+```
+
+### Expected input data
+
+The specification should describe in detail all the input data that are necessary for the operation of the node.
+The description of each input parameter is an array element contained in the **inputs** field.
+The input parameter details must match the **StreamNodeSpecificationInput** type which defined in the SDK:
+
+```typescript
+import { StreamNodeSpecificationInput } from "hcloud-sdk/lib/interfaces/high5";
+```
+
+#### Name of the input parameter
+
+Each input parameter must have a name. This name will be used to access the value of the specified parameter.
+It is recommended to define the names of all input parameters separately in the form of an exported enum, this will allow the verification of the name using built-in TypeScript tools. The specified enum must be available for import from outside so that it can be used in tests.
+
+```typescript
+export enum Input {
+    PRIME_NUMBER_POSITION = "Prime number position",
+}
+...
+inputs: [
+    {
+        name: Input.PRIME_NUMBER_POSITION,
+        ...
+    }
+]
+```
+
+#### Description of the input parameter
+
+Each input parameter should have a detailed **description** explaining what data is expected:
+
+```typescript
+description: "Specify the sequence number of the prime number to be returned"
+```
+
+#### Type of the input value
+
+It is necessary to specify the valid type of the value of the input parameter.
+The helmut.cloud describes a number of input data types that are defined in the SDK:
+
+```typescript
+import { StreamNodeSpecificationInputType } from "hcloud-sdk/lib/interfaces/high5";
+```
+
+The following input data types are available:
+- STRING,
+- STRING_LONG,
+- STRING_LIST,
+- STRING_MAP,
+- STRING_READONLY,
+- STRING_SELECT *,
+- STRING_PASSWORD,
+- NUMBER,
+- BOOLEAN,
+- ANY.
+
+Note: for the **StreamNodeSpecificationInputType.STRING_SELECT** type, it is nesesary to specify an array of all possible values ​​in the **options** field (for other types, this field is ignored).
+
+```typescript
+type: StreamNodeSpecificationInputType.NUMBER,
+```
+
+#### Example of the input value
+
+The **example** field is mandatory and must contain an example of a valid value for the specified parameter:
+
+```typescript
+example: 137
+```
+
+#### Default input value
+
+It is possible to assign a default value for the specified parameter, this field is optional:
+
+```typescript
+defaultValue: 1
+```
+
+#### Other optional properties
+
+Additionally, it is possible to specify whether this field is **mandatory** or **advanced**, use the boolean type here:
+
+```typescript
+mandatory: true,
+advanced: false,
+```
+
+Where field **mandatory** means that the current input parameter is mandatory.
+And the **advanced** field refers to the display of the current parameter in the user interface - it “hides” the input field in the nodes configuration panel under the advanced accordion.
+
+### Outputs
+
+The specification should describe in detail all the output data that will be returned by node after execution.
+The description of each output parameter is an array element contained in the **outputs** field.
+The output parameter details must match the **StreamNodeSpecificationOutputV2** type which defined in the SDK:
+
+```typescript
+import { StreamNodeSpecificationOutputV2 } from "hcloud-sdk/lib/interfaces/high5";
+```
+
+#### Name of the output parameter
+
+Each output parameter must have a name. This name will be used to access the value of the specified parameter.
+It is recommended to define the names of all output parameters separately in the form of an exported enum, this will allow the verification of the name using built-in TypeScript tools. The specified enum must be available for import from outside so that it can be used in tests.
+
+```typescript
+export enum Output {
+    EXECUTION = "Execution",
+    DURATION = "Run time",
+}
+...
+outputs: [
+    {
+        name: Output.EXECUTION,
+        ...
+    }
+]
+```
+
+#### Description of the output parameter
+
+Each output parameter should have a detailed **description** explaining what data is expected:
+
+```typescript
+description: "Returns a prime number at the given ordinal number"
+```
+
+#### Type of the output value
+
+It is necessary to specify the valid type of the value of the output parameter.
+The helmut.cloud describes a number of output data types that are defined in the SDK:
+
+```typescript
+import { StreamNodeSpecificationOutputType } from "hcloud-sdk/lib/interfaces/high5";
+```
+
+The following output data types are available:
+- STRING,
+- STRING_LONG,
+- STRING_LIST,
+- STRING_MAP,
+- STRING_READONLY,
+- NUMBER,
+- BOOLEAN,
+- ANY,
+- JSON,
+- XML,
+- HTML.
+
+```typescript
+type: StreamNodeSpecificationOutputType.NUMBER,
+```
+
+#### Example of the output value
+
+The **example** field is mandatory and must contain an example of a valid value for the specified parameter:
+
+```typescript
+example: 773,
+```
+
+### Additional connectors
+
+If necessary, you can specify a list of additional connectors (specification field **additionalConnectors** is optional). Each element of this array must be of type **StreamNodeSpecificationAdditionalConnector**.
+This type is also defined in the SDK and contains only two fields:
+
+```typescript
+interface StreamNodeSpecificationAdditionalConnector {
+    name: string;
+    description: string;
+}
+```
+
+### Node path
+
+Optional field **path** can have a value of string type:
+
+```typescript
+path: "/temp",
+```
+
+### Custom node
+
+Field **customNode** is also optional and should contain a value of type **StreamCustomNodeSpecification**, which is defined in the SDK:
+
+```typescript
+interface StreamCustomNodeSpecification {
+    _id: string;
+    color?: string;
+}
+```
+
+## Wave node helper classes
+
+As mentioned earlier, each node class has a **wave** property which will be inserted at runtime. This is an instance of the **Wave** class that provides access to the nodes internal methods and properties in a user friendly way.
+This field gives access to the following helper classes:
+- general,
+- logger,
+- inputs,
+- outputs.
+
+All these helper classes are implemented in **Wave Engine**.
+
+### Helper class General
+
+This class provides access to general node methods and properties.
+
+#### Get the nodes UUID
+
+Method **getNodeUuid()** returns an unique identifier for the node. It can be called from within a node as follows:
+
+```typescript
+this.wave.general.getNodeUuid();
+```
+
+#### Resolve value
+
+Method **resolveValue()** allows to resolve an arbitrary string value on demand within the node. Keep in mind that any wildcards used in node inputs are already resolved. Use ``Wave.Inputs.getInputValueByInputName`` to get the resolved value of an input.
+It returns The resolved value as number if its a string representation of a number, otherwise as string:
+
+```typescript
+this.wave.general.resolveValue("123");  // it returns 123 as a number
+this.wave.general.resolveValue("{{OUTPUT.<nodeUuid>.res.data}}");  // resolve a wildcard on demand, in this case the output of another node
+```
+
+#### Get node specification
+
+Method ``getNodeSpecification()`` returns the node specification of a stream node.
+
+```typescript
+this.wave.general.getNodeSpecification();
+```
+
+#### Cancel execution
+
+The method ``cancelExecution()`` sets the overall execution state to be "CANCELED". Make sure to stop all processes the node is currently running before calling that method.
+
+```typescript
+this.wave.general.cancelExecution();
+```
+
+#### Check if stream is cancelled
+
+The method ``isCanceled()`` checks if the execution state is "CANCELED". It returns `true` if the execution state is "CANCELED", otherwise `false`.
+
+```typescript
+this.wave.general.isCanceled();
+```
+
+react on external cancelation:
+
+```typescript
+if (this.wave.general.isCanceled()) {
+    throw new Error("Stream was canceled");
+}
+```
+
+#### Get HCloud client
+
+The method ``getHcloudClient()`` returns the HCloud coming from initial execution request. It already holds the server configuration and the token of the execution target.
+
+```typescript
+this.wave.general.getHcloudClient();
+```
+
+#### Get the name of the organization
+
+The method ``getOrgName()`` returns the name of the organization coming from initial execution request.
+
+```typescript
+this.wave.general.getOrgName();
+```
+
+#### Get the name of the space
+
+The method ``getSpaceName()`` returns the name of the High5 space coming from initial execution request.
+
+```typescript
+this.wave.general.getSpaceName();
+```
+
+#### Update dashboard message
+
+The method ``setStreamMessage(msg)`` allows to update the streams dashboard message.
+
+```typescript
+this.wave.general.setStreamMessage("My new message");
+```
+
+### Helper class Logger
+
+This class provides access to the nodes logger to update the nodes progress and status message.
+
+#### Get current progress
+
+The method ``getCurrentProgress()`` allows to get the current progress value of the node. It returns The current progress value or undefined if not found or set.
+
+```typescript
+this.wave.logger.getCurrentProgress();
+```
+
+#### Get current message
+
+The method ``getCurrentMessage()`` allows to get the current message of the node. It returns The current message value or undefined if not found or set.
+
+```typescript
+this.wave.logger.getCurrentMessage();
+```
+
+#### Update progress
+
+The method ``updateProgress(progress)`` allows to update the nodes progress value.
+
+```typescript
+this.wave.logger.updateProgress(53);  // set the progress to 53%
+```
+
+#### Update status message
+
+The method ``updateMessage(msg)`` allows to update the nodes status message.
+
+```typescript
+this.wave.logger.updateMessage("My new message");
+```
+
+#### Update progress and status message
+
+Method ``updateProgressAndMessage(progress, message)`` allows to update the nodes progress and status message simultaneously. The progress value should be a number and the message - string.
+
+```typescript
+this.wave.logger.updateProgressAndMessage(77, "Copying files... Please wait!");
+```
+
+### Helper class Inputs
+
+This class provides access to the nodes inputs to retrieve incoming data and their validation.
+
+#### Get all inputs
+
+Method ``getInputs()`` allows to get all existing input objects. It returns an array of `StreamNodeResolvedInput` objects or an empty list if node has no inputs.
+
+```typescript
+this.wave.inputs.getInputs();
+```
+
+Note: the type **StreamNodeResolvedInput** is defined in Wave Engine and contains the following fields:
+
+```typescript
+interface StreamNodeResolvedInput {
+    name: string;
+    value: any;
+    originalValue: any;
+    type: StreamNodeSpecificationInputType;
+}
+```
+
+#### Get the input object by name
+
+To get the input object by name - please use method ``getInputByName(inputName)``. It returns a `StreamNodeResolvedInput` object or `undefined` if not found.
+
+```typescript
+this.wave.inputs.getInputByName(Input.PRIME_NUMBER_POSITION);
+```
+
+#### Get pre-resolved input by name
+
+To get the pre-resolved input object by name (like in the node specification above) - use method ``getPreresolvedInputByName(inputName)``. It returns a `StreamNodeSpecificationInput` object or `undefined` if not found.
+
+```typescript
+this.wave.inputs.getPreresolvedInputByName(Input.PRIME_NUMBER_POSITION);
+```
+
+#### Get input value by name
+
+To get the input value by name - use method ``getInputValueByInputName(inputName)``. It returns the value of the input or `undefined` if not found.
+
+```typescript
+this.wave.inputs.getInputValueByInputName(Input.PRIME_NUMBER_POSITION);
+```
+
+Examples of reading input values ​​of different types:
+
+```typescript
+const stringInputValue: string = this.wave.inputs.getInputValueByInputName(Input.NAME_OF_STRING_INPUT);
+const stringLongInputValue: string = this.wave.inputs.getInputValueByInputName(Input.NAME_OF_STRING_LONG_INPUT);
+const stringPasswordInputValue: string = this.wave.inputs.getInputValueByInputName(Input.NAME_OF_STRING_PASSWORD_INPUT);
+const numberInputValue: number = this.wave.inputs.getInputValueByInputName(Input.NAME_OF_NUMBER_INPUT);
+const booleanInputValue: boolean = this.wave.inputs.getInputValueByInputName(Input.NAME_OF_BOOLEAN_INPUT);
+const stringSelectInputValue: string = this.wave.inputs.getInputValueByInputName(Input.NAME_OF_STRING_SELECT_INPUT);
+const stringListInputValue: string[] = this.wave.inputs.getInputValueByInputName(Input.NAME_OF_STRING_LIST_INPUT);
+const stringMapInputValue: Record<string, string> = this.wave.inputs.getInputValueByInputName(Input.NAME_OF_STRING_MAP_INPUT);
+```
+
+#### Get input original value by name
+
+To get the input original value (pre- wildcard resolved) by name - use method ``getInputOriginalValueByInputName(inputName)``. It returns the original value of the input or `undefined` if not found.
+
+```typescript
+this.wave.inputs.getInputOriginalValueByInputName(Input.PRIME_NUMBER_POSITION);
+```
+
+### Helper class Outputs
+
+This class provides access to the nodes outputs to retrieve results of the node execution.
+
+#### Get all outputs
+
+To get all existing output objects - use method ``getAllOutputs()``. It returns a array of ``StreamNodeOutput`` objects or an empty list if node has no outputs.
+
+```typescript
+this.wave.outputs.getAllOutputs();
+```
+
+Note: the type **StreamNodeOutput** is defined in Wave Engine and contains the following fields:
+
+```typescript
+interface StreamNodeOutput {
+    name: string | undefined;
+    value: any;
+    type: StreamNodeSpecificationOutputType;
+}
+```
+
+#### Get output by name
+
+To get the output object by name - use method ``getOutputByName(outputName)``. It returns a `'StreamNodeOutput'` object or `undefined` if not found.
+
+```typescript
+this.wave.outputs.getOutputByName(Output.EXECUTION);
+```
+
+#### Get output value by name
+
+To get the output value by name - use method ``getOutputValueByOutputName(outputName)``. It returns the value of the output or `undefined` if not found.
+
+```typescript
+this.wave.outputs.getOutputValueByOutputName(Output.DURATION);
+```
+
+#### Set output
+
+The method ``setOutput(outputName, value)`` updates or adds an outputs value. Output can be seen as one node result.
+
+```typescript
+this.wave.outputs.setOutput(Output.EXECUTION, 787);
+```
+
+Examples of setting outputs of different types:
+
+```typescript
+this.wave.outputs.setOutput(Output.NAME_OF_STRING_OUTPUT, "<insert your output value here>");
+this.wave.outputs.setOutput(Output.NAME_OF_STRING_READ_ONLY_OUTPUT, "<insert your output value here>");
+this.wave.outputs.setOutput(Output.NAME_OF_STRING_LONG_OUTPUT, "<insert your output value here>");
+this.wave.outputs.setOutput(Output.NAME_OF_STRING_PASSWORD_OUTPUT, "<insert your output value here>");
+this.wave.outputs.setOutput(Output.NAME_OF_NUMBER_OUTPUT, 0);
+this.wave.outputs.setOutput(Output.NAME_OF_BOOLEAN_OUTPUT, true);
+this.wave.outputs.setOutput(Output.NAME_OF_STRING_LIST_OUTPUT, ["<insert your output value here>"]);
+this.wave.outputs.setOutput(Output.NAME_OF_STRING_MAP_OUTPUT, { key: "<insert your output value here>" });
+this.wave.outputs.setOutput(Output.NAME_OF_ANY_OUTPUT, "<insert your output value here>");
+```
+
+Set additional connector output works the same like setting outputs:
+
+```typescript
+this.wave.outputs.setOutput(AdditionalConnectors.NAME_OF_ADDITIONAL_CONNECTOR_1, 0);
+```
+
+#### Execute additional connector
+
+The async function executes an additional connector and returns the stream result of that connector. If connector wasn't found undefined is returned. It returns the stream result or undefined if connector wasn't found by name.
+
+```typescript
+await this.wave.outputs.executeAdditionalConnector("connectorName");
+```
+
+## Implementation of the node logic
+
+Apart from describing the node specification, it is also necessary to implement the **execute()** method, which will contain the main working logic of the node. This method does not expect any parameters and only returns a Promise<void>.
+Using the helper class inputs, this method should obtain the expected input data, process it, and return the result to the user using the helper class outputs.
+
+Take care that the node runs completely without exceptions to make it successful. The stream execution continues on the success output. Throw an exception if the node should fail. The stream execution continues on the fail output.
+
+In case of an external cancelation it's the nodes developers responsibility to check on the 'isCanceled' state if he/she develops a node with higher execution duration time. Otherwise the stream execution will only stop if the execution of the current node is finished. You have to handle the cancel event in the node and throw a **StreamNodeGenericError** to cancel the stream if your node has a long running operation.
+
+To calculate the time spent executing the node, start a timer at the beginning of the execute method and return the time difference at the end.
+
+```typescript
+async execute(): Promise<void> {
+    // Start the timer to calculate the duration of execution
+    const startTime = performance.now();
+
+    // Read inputs
+    const pos: number = this.wave.inputs.getInputValueByInputName(Input.PRIME_NUMBER_POSITION);
+
+    // Check the correctness of incoming data
+    if (pos <= 0) throw new Error("The position must be a positive number");
+
+    // Data processing
+    const result = await this.getPrimeNumberByPosition(pos);
+
+    // Put result to outputs
+    this.wave.outputs.setOutput(Output.EXECUTION, result);
+
+    // Stop timer and set duration of execution
+    this.wave.outputs.setOutput(Output.DURATION, performance.now() - startTime);
+}
+```
