@@ -41,21 +41,21 @@ type Inputs = {
     getInputs(): StreamNodeResolvedInput[]
     getInputByName(inputName: string): StreamNodeResolvedInput | undefined
     getPreresolvedInputByName(inputName: string): StreamNodeSpecificationInput | undefined
-    getInputValueByInputName(inputName: string): any
-    getInputOriginalValueByInputName(inputName: string): any
+    getInputValueByInputName(inputName: string): unknown
+    getInputOriginalValueByInputName(inputName: string): unknown
 }
 
 type StreamNodeResolvedInput = {
     name: string;
-    value: any;
-    originalValue: any;
+    value: unknown;
+    originalValue: unknown;
 }
 
 
 type Outputs = {
     getAllOutputs(): StreamNodeOutput[]
     getOutputByName(outputName: string): StreamNodeOutput | undefined
-    getOutputValueByOutputName(outputName: string): any
-    setOutput(name: string, value: any): void
+    getOutputValueByOutputName(outputName: string): unknown
+    setOutput(name: string, value: unknown): void
     executeAdditionalConnector(connectorName: string): Promise<StreamResult | undefined>
 }
