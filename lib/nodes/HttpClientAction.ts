@@ -157,12 +157,21 @@ export default class HttpClientAction extends Node {
         const startTime = performance.now();
         try {
             const requestConfig: AxiosRequestConfig = {
-                method: this.wave.inputs.getInputValueByInputName(Input.METHOD),
-                url: this.wave.inputs.getInputValueByInputName(Input.URL),
-                headers: this.wave.inputs.getInputValueByInputName(Input.HEADERS),
+                method: this.wave.inputs.getInputValueByInputName(
+                    Input.METHOD
+                ) as string,
+                url: this.wave.inputs.getInputValueByInputName(
+                    Input.URL
+                ) as string,
+                headers: this.wave.inputs.getInputValueByInputName(
+                    Input.HEADERS
+                ) as Record<string, string | string[]>,
                 data: this.wave.inputs.getInputValueByInputName(Input.BODY),
-                timeout: (this.wave.inputs.getInputValueByInputName(Input.TIMEOUT) ?? 60) * 1000,
-                transformResponse: res => res,
+                timeout:
+                    ((this.wave.inputs.getInputValueByInputName(
+                        Input.TIMEOUT
+                    ) as number) ?? 60) * 1000,
+                transformResponse: (res) => res,
             };
 
             const ignoreSSLCert = this.wave.inputs.getInputValueByInputName(Input.IGNORE_INVALID_SSL_CERTIFICATE);
@@ -195,7 +204,7 @@ export default class HttpClientAction extends Node {
 
             const output = { [Output.STATUS_CODE]: res.status, [Output.HEADERS]: res.headers, [Output.BODY]: this.parseBody(res) } as HttpResponse;
             this.wave.outputs.setOutput(Output.EXECUTION, output);
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
                 const output = { [Output.STATUS_CODE]: err.response?.status, [Output.HEADERS]: err.response?.headers, [Output.BODY]: err.response?.data } as HttpResponse;
                 this.wave.outputs.setOutput(Output.EXECUTION, output);
@@ -217,7 +226,8 @@ export default class HttpClientAction extends Node {
         if (contentType.includes("application/json")) {
             try {
                 return JSON.parse(response.data);
-            } catch (error) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (_) {
                 return response.data;
             }
         }

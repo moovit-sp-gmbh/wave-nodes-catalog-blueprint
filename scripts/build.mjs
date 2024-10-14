@@ -19,7 +19,6 @@ async function main() {
 
 	for (const [name, nodeCtor] of Object.entries(catalog.nodeCatalog)) {
 		try {
-			// @ts-ignore
 			const node = new nodeCtor();
 			const nodeSpec = node.specification;
 			if (nodeSpec.specVersion === specVersion) {
