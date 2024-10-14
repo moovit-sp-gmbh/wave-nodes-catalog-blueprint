@@ -79,7 +79,7 @@ export default {
         },
         fixable: "code",
     },
-    create: function(context) {
+    create: function (context) {
         return {
             Program: (node) => {
                 checkNodeFile(file, node, context);

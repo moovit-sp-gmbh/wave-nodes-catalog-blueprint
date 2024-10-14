@@ -3,7 +3,6 @@ import pluginJs from "@eslint/js";
 import tseslint from "typescript-eslint";
 import local_rules from "./eslint-local-rules/index.mjs";
 
-
 export default [
     { files: ["**/*.{js,mjs,cjs,ts}"] },
     { ignores: ["**/bundle.js", "eslint-local-rules/**/*"] },
@@ -15,6 +14,6 @@ export default [
         rules: {
             "local_rules/node-specification": "warn",
             "local_rules/node-attributes": "warn",
-        }
+        },
     },
 ];
