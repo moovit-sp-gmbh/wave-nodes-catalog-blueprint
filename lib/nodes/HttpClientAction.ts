@@ -1,4 +1,4 @@
-import Node from "../Node"
+import Node from "../Node";
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import {
     StreamNodeSpecificationInputType,
@@ -84,7 +84,8 @@ export default class HttpClientAction extends Node {
             },
             {
                 name: Input.HEADERS,
-                description: "Enter HTTP headers to be included with the request",
+                description:
+                    "Enter HTTP headers to be included with the request",
                 type: StreamNodeSpecificationInputType.STRING_MAP,
                 example: { Authorization: "Bearer your_bearer_token" },
             },
@@ -92,18 +93,21 @@ export default class HttpClientAction extends Node {
                 name: Input.BODY,
                 description: "Enter the HTTP request body content",
                 type: StreamNodeSpecificationInputType.STRING_LONG,
-                example: '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
+                example:
+                    '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
             },
             {
                 name: Input.FAIL_ON_NON_2XX_RESPONSE,
-                description: "Enable this option to trigger the fail output connector if the HTTP response code falls outside the 2xx range",
+                description:
+                    "Enable this option to trigger the fail output connector if the HTTP response code falls outside the 2xx range",
                 type: StreamNodeSpecificationInputType.BOOLEAN,
                 example: false,
                 defaultValue: false,
             },
             {
                 name: Input.FOLLOW_REDIRECTS,
-                description: "Enable this option if the node should follow HTTP redirect requests. If disabled and a redirect request is sent, the node will fail.",
+                description:
+                    "Enable this option if the node should follow HTTP redirect requests. If disabled and a redirect request is sent, the node will fail.",
                 type: StreamNodeSpecificationInputType.BOOLEAN,
                 example: false,
                 defaultValue: true,
@@ -118,7 +122,8 @@ export default class HttpClientAction extends Node {
             },
             {
                 name: Input.TIMEOUT,
-                description: "Enter the number of seconds the HTTP node should wait for a response before it times out and fails.",
+                description:
+                    "Enter the number of seconds the HTTP node should wait for a response before it times out and fails.",
                 type: StreamNodeSpecificationInputType.NUMBER,
                 example: 10,
                 defaultValue: 60,
@@ -139,13 +144,15 @@ export default class HttpClientAction extends Node {
                         Date: "Wed, 21 Oct 2024 07:28:00 GMT",
                         Connection: "keep-alive",
                     },
-                    [Output.BODY]: '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
+                    [Output.BODY]:
+                        '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
                 },
                 howToAccess: [`{{OUTPUT.<nodeUuid>.${Output.EXECUTION}}}`],
             },
             {
                 name: Output.DURATION,
-                description: "Returns the total amount of time taken by the node to execute the node in milliseconds",
+                description:
+                    "Returns the total amount of time taken by the node to execute the node in milliseconds",
                 type: StreamNodeSpecificationOutputType.NUMBER,
                 example: 200,
                 howToAccess: [`{{OUTPUT.<nodeUuid>.${Output.DURATION}}}`],
@@ -174,24 +181,32 @@ export default class HttpClientAction extends Node {
                 transformResponse: (res) => res,
             };
 
-            const ignoreSSLCert = this.wave.inputs.getInputValueByInputName(Input.IGNORE_INVALID_SSL_CERTIFICATE);
+            const ignoreSSLCert = this.wave.inputs.getInputValueByInputName(
+                Input.IGNORE_INVALID_SSL_CERTIFICATE
+            );
             if (ignoreSSLCert) {
                 const agent = new https.Agent({ rejectUnauthorized: false });
                 requestConfig.httpsAgent = agent;
             }
 
-            const failOnNon2XXResponse = this.wave.inputs.getInputValueByInputName(Input.FAIL_ON_NON_2XX_RESPONSE);
-            const followRedirects = this.wave.inputs.getInputValueByInputName(Input.FOLLOW_REDIRECTS);
+            const failOnNon2XXResponse =
+                this.wave.inputs.getInputValueByInputName(
+                    Input.FAIL_ON_NON_2XX_RESPONSE
+                );
+            const followRedirects = this.wave.inputs.getInputValueByInputName(
+                Input.FOLLOW_REDIRECTS
+            );
 
             if (failOnNon2XXResponse) {
-                requestConfig.validateStatus = status => status >= 200 && status < 300;
+                requestConfig.validateStatus = (status) =>
+                    status >= 200 && status < 300;
             } else {
                 requestConfig.validateStatus = () => true;
             }
 
             if (!followRedirects) {
                 const oldValidateStatus = requestConfig.validateStatus;
-                requestConfig.validateStatus = s => {
+                requestConfig.validateStatus = (s) => {
                     if (s >= 300 && s < 400) {
                         return false;
                     }
@@ -202,18 +217,29 @@ export default class HttpClientAction extends Node {
 
             const res = await axios.request(requestConfig);
 
-            const output = { [Output.STATUS_CODE]: res.status, [Output.HEADERS]: res.headers, [Output.BODY]: this.parseBody(res) } as HttpResponse;
+            const output = {
+                [Output.STATUS_CODE]: res.status,
+                [Output.HEADERS]: res.headers,
+                [Output.BODY]: this.parseBody(res),
+            } as HttpResponse;
             this.wave.outputs.setOutput(Output.EXECUTION, output);
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
-                const output = { [Output.STATUS_CODE]: err.response?.status, [Output.HEADERS]: err.response?.headers, [Output.BODY]: err.response?.data } as HttpResponse;
+                const output = {
+                    [Output.STATUS_CODE]: err.response?.status,
+                    [Output.HEADERS]: err.response?.headers,
+                    [Output.BODY]: err.response?.data,
+                } as HttpResponse;
                 this.wave.outputs.setOutput(Output.EXECUTION, output);
                 throw new Error(err.name + ": " + err.message);
             } else {
                 throw err;
             }
         } finally {
-            this.wave.outputs.setOutput(Output.DURATION, performance.now() - startTime);
+            this.wave.outputs.setOutput(
+                Output.DURATION,
+                performance.now() - startTime
+            );
         }
     }
 
