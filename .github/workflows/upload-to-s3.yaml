@@ -45,6 +45,13 @@ jobs:
           if [ -z $version ]; then version="0.0.0"; fi
           echo "version=$version" >> $GITHUB_OUTPUT
 
+      - name: Check changelog and convert to correct format
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          node scripts/check-changelog.mjs $TAG_NAME
+          node scripts/convert-changelog.mjs
+
+      # ToDo: Pass the changelog-converted.json (created in step above) to this action
       - name: Upload catalog and update registry
         id: upload
         uses: moovit-sp-gmbh/hcloud-catalog-upload-action@main
