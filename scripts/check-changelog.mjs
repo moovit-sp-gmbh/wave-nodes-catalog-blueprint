@@ -31,9 +31,8 @@ if (firstEntry.version !== tag) {
     process.exit(1);
 }
 
-const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-if (!dateRegex.test(firstEntry.date)) {
-    console.error(`Date ${firstEntry.date} is not in YYYY-MM-DD format.`);
+if (isNaN(Date.parse(firstEntry.date))) {
+    console.error(`Date ${firstEntry.date} is not in a valid format.`);
     process.exit(1);
 }
 
