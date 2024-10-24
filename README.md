@@ -8,7 +8,13 @@ This repository serves as a base for creating new node catalogs to be used in he
 
 Your catalog is defined using the Catalog constructor. The index.ts file should have a Catalog instance has its default export to allow the build scripts to function properly.
 
-A Catalog consists of a name, description, logo and a series of nodes. Nodes are any class that extends the Node class.
+A Catalog consists of a name, description, logo, minimum required engine version and a series of nodes. Nodes are any class that extends the Node class.
+
+#### Minimum required engine version
+
+Any space using an older engine version than the one specified will not be able to execute streams with nodes from this catalog.
+
+We intend to have a compatibility testing tool in the future, to easily check if there are incompatabilities between the catalog's nodes and any engine version.
 
 ### Node
 
