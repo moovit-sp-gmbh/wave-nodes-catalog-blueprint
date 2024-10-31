@@ -35,7 +35,10 @@ jobs:
           echo "minimumEngineVersion=$(node -e 'console.log(require("./bundle.js").default.minimumEngineVersion)')" >> "$GITHUB_OUTPUT"
 
       - name: Setup upload folder
-        run: mkdir upload && cp ./bundle.js ./specification.json upload
+        run: |
+          mkdir -p upload/docs
+          cp ./bundle.js ./specification.json upload/
+          find ${{ github.workspace }}/lib/nodes -type f -name '*.md' -exec cp {} ${{ github.workspace }}/upload/docs/ \;
 
       - name: Extract version from tag
         id: catalog-version
