@@ -20,9 +20,9 @@ We intend to have a compatibility testing tool in the future, to easily check if
 
 Any class that extends the Node class is required to define its specification and its execution logic. Any packages can be used here as they will all be bundled with the source code when publishing.
 
-### Cleaning up the sample HttpClientAction node
+### Cleaning up the sample HttpClient node
 
-When you decide to remove the HttpClientAction node you should also cleanup its `axios` dependency. Keep in mind, that since the `hcloud-sdk` has it as a dependency it will stay in your `package-lock.json`.
+When you decide to remove the HttpClient node you should also cleanup its `axios` dependency. Keep in mind, that since the `hcloud-sdk` has it as a dependency it will stay in your `package-lock.json`.
 
     npm uninstall axios
 

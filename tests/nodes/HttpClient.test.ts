@@ -1,7 +1,7 @@
 import { AxiosRequestHeaders, AxiosResponse } from "axios";
-import HttpClientAction from "../../lib/nodes/HttpClientAction";
+import HttpClient from "../../lib/nodes/HttpClient";
 
-describe("HttpClientAction", () => {
+describe("HttpClient", () => {
     it("should parse body according to response headers", () => {
         const response: AxiosResponse = {
             headers: { "content-type": "application/json" },
@@ -13,7 +13,7 @@ describe("HttpClientAction", () => {
             },
         };
 
-        const testResult = HttpClientAction.prototype.parseBody(response);
+        const testResult = HttpClient.prototype.parseBody(response);
 
         expect(testResult).toEqual(JSON.parse(response.data));
     });
@@ -29,7 +29,7 @@ describe("HttpClientAction", () => {
             },
         };
 
-        const testResult = HttpClientAction.prototype.parseBody(response);
+        const testResult = HttpClient.prototype.parseBody(response);
 
         expect(testResult).toEqual(response.data);
     });
@@ -45,7 +45,7 @@ describe("HttpClientAction", () => {
             },
         };
 
-        const testResult = HttpClientAction.prototype.parseBody(response);
+        const testResult = HttpClient.prototype.parseBody(response);
 
         expect(testResult).toEqual(response.data);
     });

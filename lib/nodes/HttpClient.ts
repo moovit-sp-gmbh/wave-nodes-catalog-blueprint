@@ -3,9 +3,7 @@ import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import {
     StreamNodeSpecificationInputType,
     StreamNodeSpecificationOutputType,
-    StreamNodeSpecificationPackage,
-    StreamNodeSpecificationType,
-    StreamNodeSpecificationV1,
+    StreamNodeSpecificationV2,
 } from "hcloud-sdk/lib/interfaces/high5";
 import https from "https";
 
@@ -37,13 +35,11 @@ interface HttpResponse {
     [Output.BODY]: string | object;
 }
 
-export default class HttpClientAction extends Node {
-    specification: StreamNodeSpecificationV1 = {
-        specVersion: 1,
+export default class HttpClient extends Node {
+    specification: StreamNodeSpecificationV2 = {
+        specVersion: 2,
         name: "HTTP Client",
         description: "HTTP client for sending HTTP requests",
-        type: StreamNodeSpecificationType.ACTION,
-        package: StreamNodeSpecificationPackage.THIRD_PARTY,
         category: "Networking",
         version: {
             major: 0,
@@ -147,7 +143,6 @@ export default class HttpClientAction extends Node {
                     [Output.BODY]:
                         '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
                 },
-                howToAccess: [`{{OUTPUT.<nodeUuid>.${Output.EXECUTION}}}`],
             },
             {
                 name: Output.DURATION,
@@ -155,7 +150,6 @@ export default class HttpClientAction extends Node {
                     "Returns the total amount of time taken by the node to execute the node in milliseconds",
                 type: StreamNodeSpecificationOutputType.NUMBER,
                 example: 200,
-                howToAccess: [`{{OUTPUT.<nodeUuid>.${Output.DURATION}}}`],
             },
         ],
     };
