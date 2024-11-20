@@ -40,18 +40,21 @@ jobs:
           cp ./bundle.js ./specification.json upload/
           find ${{ github.workspace }}/lib/nodes -type f -name '*.md' -exec cp {} ${{ github.workspace }}/upload/docs/ \;
 
-      - name: Extract version from tag
+      - name: Extract version from tag and remove "v" prefix
         id: catalog-version
         run: |
           tag=${{ github.ref_name }}
+          if [[ $tag != v* ]]; then
+            echo "Tag does not start with 'v'. Failing the workflow."
+            exit 1
+          fi
           version=${tag:1}
           if [ -z $version ]; then version="0.0.0"; fi
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Check changelog and convert to correct format
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          node scripts/check-changelog.mjs $TAG_NAME
+          node scripts/check-changelog.mjs ${{ steps.catalog-version.outputs.version }}
           node scripts/convert-changelog.mjs
 
       # ToDo: Pass the changelog-converted.json (created in step above) to this action

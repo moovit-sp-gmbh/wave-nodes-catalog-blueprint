@@ -1,8 +1,6 @@
 import fs from "fs";
 
 let tag = process.argv[2];
-tag = tag.startsWith("v") ? tag.slice(1) : tag;
-
 let changelog;
 
 try {
@@ -20,19 +18,24 @@ if (!Array.isArray(changelog) || changelog.length === 0) {
 
 const firstEntry = changelog[0];
 
-const semverRegex = /^(\d+)\.(\d+)\.(\d+)$/;
+const semverRegex = /^(\d+)\.(\d+)\.(\d+)(-dev-\d+)?$/;
 if (!semverRegex.test(firstEntry.version)) {
     console.error(
-        `Version ${firstEntry.version} in changelog.json is not a valid version number. Must be 'X.X.X'`
+        `Version ${firstEntry.version} in changelog.json is not a valid version number. Must be 'X.X.X' or 'X.X.X-dev-X`
     );
     process.exit(1);
 }
 
 if (firstEntry.version !== tag) {
-    console.error(
-        "Changelog version and pushed tag don't match. You probably forgot to update the changelog"
-    );
-    process.exit(1);
+    if (tag.includes("dev")) {
+        // Changelog for dev release is optional, so successfully end script if not provided
+        process.exit(0); 
+    } else {
+        console.error(
+            `Changelog version '${firstEntry.version}' and pushed tag '${tag}' don't match. You probably forgot to update the changelog`
+        );
+        process.exit(1);
+    }
 }
 
 if (isNaN(Date.parse(firstEntry.date))) {
