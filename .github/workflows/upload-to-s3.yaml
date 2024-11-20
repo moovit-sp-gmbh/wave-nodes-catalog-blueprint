@@ -34,12 +34,6 @@ jobs:
           echo "logoUrl=$(node -e 'console.log(require("./bundle.js").default.logoUrl)')" >> "$GITHUB_OUTPUT"
           echo "minimumEngineVersion=$(node -e 'console.log(require("./bundle.js").default.minimumEngineVersion)')" >> "$GITHUB_OUTPUT"
 
-      - name: Setup upload folder
-        run: |
-          mkdir -p upload/docs
-          cp ./bundle.js ./specification.json upload/
-          find ${{ github.workspace }}/lib/nodes -type f -name '*.md' -exec cp {} ${{ github.workspace }}/upload/docs/ \;
-
       - name: Extract version from tag and remove "v" prefix
         id: catalog-version
         run: |
@@ -57,7 +51,13 @@ jobs:
           node scripts/check-changelog.mjs ${{ steps.catalog-version.outputs.version }}
           node scripts/convert-changelog.mjs
 
-      # ToDo: Pass the changelog-converted.json (created in step above) to this action
+      - name: Setup upload folder
+        run: |
+          mkdir -p upload/docs
+          cp ./bundle.js ./specification.json upload/
+          cp ./changelog-converted.json upload/changelog.json
+          find ${{ github.workspace }}/lib/nodes -type f -name '*.md' -exec cp {} ${{ github.workspace }}/upload/docs/ \;
+
       - name: Upload catalog and update registry
         id: upload
         uses: moovit-sp-gmbh/hcloud-catalog-upload-action@main
@@ -75,9 +75,6 @@ jobs:
           version: ${{ steps.catalog-version.outputs.version }}
           source_dir: ${{ github.workspace }}/upload
           dest_dir: "<your path>"
-          changelog: |
-            Nothing changed
-          dev: false
           on_fail: delete
 
       - name: Print catalog registry URL
