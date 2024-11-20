@@ -35,7 +35,7 @@
     "homepage": "https://github.com/moovit-sp-gmbh/helmut.cloud-catalog#readme",
     "dependencies": {
         "axios": "^1.7.7",
-        "hcloud-sdk": "^14.13.2"
+        "hcloud-sdk": "^15.0.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.12.0",
