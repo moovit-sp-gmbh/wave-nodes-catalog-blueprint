@@ -22,6 +22,8 @@ Determining the version number works as follows: If you have one or more breakin
 new features without breaking changes, increment the second digit (minor) and set the third digit (patch) to zero. If
 there are no breaking changes and no new features, but there are bug fixes, only increment the minor version.
 
+While providing a changelog entry for a main release is mandatory, changelog entries for dev releases (e.g. v1.2.3-dev-1) are optional. In the Stream Designer Studio, a toggle switch button allows the user to display dev release changelogs.
+
 Additional notes:
 
 - New releases must always be included at the top of the changelog
