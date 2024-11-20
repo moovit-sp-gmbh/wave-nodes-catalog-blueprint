@@ -16,30 +16,30 @@ if (!Array.isArray(changelog) || changelog.length === 0) {
     process.exit(1);
 }
 
-const firstEntry = changelog[0];
+const latestEntry = changelog[0];
 
 const semverRegex = /^(\d+)\.(\d+)\.(\d+)(-dev-\d+)?$/;
-if (!semverRegex.test(firstEntry.version)) {
+if (!semverRegex.test(latestEntry.version)) {
     console.error(
-        `Version ${firstEntry.version} in changelog.json is not a valid version number. Must be 'X.X.X' or 'X.X.X-dev-X`
+        `Version ${latestEntry.version} in changelog.json is not a valid version number. Must be 'X.X.X' or 'X.X.X-dev-X`
     );
     process.exit(1);
 }
 
-if (firstEntry.version !== tag) {
+if (latestEntry.version !== tag) {
     if (tag.includes("dev")) {
         // Changelog for dev release is optional, so successfully end script if not provided
         process.exit(0); 
     } else {
         console.error(
-            `Changelog version '${firstEntry.version}' and pushed tag '${tag}' don't match. You probably forgot to update the changelog`
+            `Changelog version '${latestEntry.version}' and pushed tag '${tag}' don't match. You probably forgot to update the changelog`
         );
         process.exit(1);
     }
 }
 
-if (isNaN(Date.parse(firstEntry.date))) {
-    console.error(`Date ${firstEntry.date} is not in a valid format.`);
+if (isNaN(Date.parse(latestEntry.date))) {
+    console.error(`Date ${latestEntry.date} is not in a valid format.`);
     process.exit(1);
 }
 
@@ -51,12 +51,12 @@ const validTypes = [
     "Miscellaneous Chores",
 ];
 
-if (!Array.isArray(firstEntry.changes) || firstEntry.changes.length === 0) {
-    console.error("No changes found in the first entry of changelog.json.");
+if (!Array.isArray(latestEntry.changes) || latestEntry.changes.length === 0) {
+    console.error("No changes found in the latest entry of changelog.json.");
     process.exit(1);
 }
 
-for (const change of firstEntry.changes) {
+for (const change of latestEntry.changes) {
     if (!validTypes.includes(change.type)) {
         console.error(`Invalid change type: ${change.type}`);
         process.exit(1);
