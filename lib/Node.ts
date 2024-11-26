@@ -276,9 +276,9 @@ type FileAndFolderHelper = {
 type AxiosHelper = {
     /**
      * Makes an axios request based on the provided AxiosRequestConfig object and returns
-     * the body of the response (response.data). If the HTTP response has a status 
+     * the body of the response (response.data). If the HTTP response has a status
      * code outside of range 2xx, an error with the error message provided by the
-     * requested ressource will be thrown. You can suppress this error by setting the 
+     * requested ressource will be thrown. You can suppress this error by setting the
      * 'validateStatus' property of the config object accordingly.
      */
     makeRequest(config: AxiosRequestConfig): Promise<unknown>;
@@ -299,4 +299,4 @@ type AxiosHelper = {
      * API via Axios, which does not strip empty/undefined fields by default.
      */
     removeEmptyFields(obj: Record<string, unknown>): Record<string, unknown>;
-}
+};
