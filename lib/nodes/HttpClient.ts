@@ -156,59 +156,65 @@ export default class HttpClient extends Node {
 
     async execute(): Promise<void> {
         const startTime = performance.now();
-        try {
-            const requestConfig: AxiosRequestConfig = {
-                method: this.wave.inputs.getInputValueByInputName(
-                    Input.METHOD
-                ) as string,
-                url: this.wave.inputs.getInputValueByInputName(
-                    Input.URL
-                ) as string,
-                headers: this.wave.inputs.getInputValueByInputName(
-                    Input.HEADERS
-                ) as Record<string, string | string[]>,
-                data: this.wave.inputs.getInputValueByInputName(Input.BODY),
-                timeout:
-                    ((this.wave.inputs.getInputValueByInputName(
-                        Input.TIMEOUT
-                    ) as number) ?? 60) * 1000,
-                transformResponse: (res) => res,
+
+        const method = this.wave.inputs.getInputValueByInputName(
+            Input.METHOD
+        ) as string;
+        const url = this.wave.inputs.getInputValueByInputName(
+            Input.URL
+        ) as string;
+        const headers = this.wave.inputs.getInputValueByInputName(
+            Input.HEADERS
+        ) as Record<string, string | string[]> | undefined;
+        const data = this.wave.inputs.getInputValueByInputName(Input.BODY) as
+            | string
+            | undefined;
+        const timeout = this.wave.inputs.getInputValueByInputName(
+            Input.TIMEOUT
+        ) as number;
+        const ignoreSSLCert = this.wave.inputs.getInputValueByInputName(
+            Input.IGNORE_INVALID_SSL_CERTIFICATE
+        ) as boolean;
+        const failOnNon2XXResponse = this.wave.inputs.getInputValueByInputName(
+            Input.FAIL_ON_NON_2XX_RESPONSE
+        ) as boolean;
+        const followRedirects = this.wave.inputs.getInputValueByInputName(
+            Input.FOLLOW_REDIRECTS
+        ) as boolean;
+
+        const requestConfig: AxiosRequestConfig = {
+            method: method,
+            url: url,
+            headers: headers,
+            data: data,
+            timeout: timeout * 1000,
+            transformResponse: (res) => res,
+        };
+
+        if (ignoreSSLCert) {
+            const agent = new https.Agent({ rejectUnauthorized: false });
+            requestConfig.httpsAgent = agent;
+        }
+
+        if (failOnNon2XXResponse) {
+            requestConfig.validateStatus = (status) =>
+                status >= 200 && status < 300;
+        } else {
+            requestConfig.validateStatus = () => true;
+        }
+
+        if (!followRedirects) {
+            const oldValidateStatus = requestConfig.validateStatus;
+            requestConfig.validateStatus = (s) => {
+                if (s >= 300 && s < 400) {
+                    return false;
+                }
+                return oldValidateStatus(s);
             };
+            requestConfig.maxRedirects = 0;
+        }
 
-            const ignoreSSLCert = this.wave.inputs.getInputValueByInputName(
-                Input.IGNORE_INVALID_SSL_CERTIFICATE
-            );
-            if (ignoreSSLCert) {
-                const agent = new https.Agent({ rejectUnauthorized: false });
-                requestConfig.httpsAgent = agent;
-            }
-
-            const failOnNon2XXResponse =
-                this.wave.inputs.getInputValueByInputName(
-                    Input.FAIL_ON_NON_2XX_RESPONSE
-                );
-            const followRedirects = this.wave.inputs.getInputValueByInputName(
-                Input.FOLLOW_REDIRECTS
-            );
-
-            if (failOnNon2XXResponse) {
-                requestConfig.validateStatus = (status) =>
-                    status >= 200 && status < 300;
-            } else {
-                requestConfig.validateStatus = () => true;
-            }
-
-            if (!followRedirects) {
-                const oldValidateStatus = requestConfig.validateStatus;
-                requestConfig.validateStatus = (s) => {
-                    if (s >= 300 && s < 400) {
-                        return false;
-                    }
-                    return oldValidateStatus(s);
-                };
-                requestConfig.maxRedirects = 0;
-            }
-
+        try {
             const res = await axios.request(requestConfig);
 
             const output = {
