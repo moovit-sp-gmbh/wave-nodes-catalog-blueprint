@@ -80,8 +80,7 @@ export default class HttpClient extends Node {
             },
             {
                 name: Input.HEADERS,
-                description:
-                    "Enter HTTP headers to be included with the request",
+                description: "Enter HTTP headers to be included with the request",
                 type: StreamNodeSpecificationInputType.STRING_MAP,
                 example: { Authorization: "Bearer your_bearer_token" },
             },
@@ -89,8 +88,7 @@ export default class HttpClient extends Node {
                 name: Input.BODY,
                 description: "Enter the HTTP request body content",
                 type: StreamNodeSpecificationInputType.STRING_LONG,
-                example:
-                    '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
+                example: '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
             },
             {
                 name: Input.FAIL_ON_NON_2XX_RESPONSE,
@@ -118,8 +116,7 @@ export default class HttpClient extends Node {
             },
             {
                 name: Input.TIMEOUT,
-                description:
-                    "Enter the number of seconds the HTTP node should wait for a response before it times out and fails.",
+                description: "Enter the number of seconds the HTTP node should wait for a response before it times out and fails.",
                 type: StreamNodeSpecificationInputType.NUMBER,
                 example: 10,
                 defaultValue: 60,
@@ -140,14 +137,12 @@ export default class HttpClient extends Node {
                         Date: "Wed, 21 Oct 2024 07:28:00 GMT",
                         Connection: "keep-alive",
                     },
-                    [Output.BODY]:
-                        '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
+                    [Output.BODY]: '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
                 },
             },
             {
                 name: Output.DURATION,
-                description:
-                    "Returns the total amount of time taken by the node to execute the node in milliseconds",
+                description: "Returns the total amount of time taken by the node to execute the node in milliseconds",
                 type: StreamNodeSpecificationOutputType.NUMBER,
                 example: 200,
             },
@@ -157,30 +152,14 @@ export default class HttpClient extends Node {
     async execute(): Promise<void> {
         const startTime = performance.now();
 
-        const method = this.wave.inputs.getInputValueByInputName(
-            Input.METHOD
-        ) as string;
-        const url = this.wave.inputs.getInputValueByInputName(
-            Input.URL
-        ) as string;
-        const headers = this.wave.inputs.getInputValueByInputName(
-            Input.HEADERS
-        ) as Record<string, string | string[]> | undefined;
-        const data = this.wave.inputs.getInputValueByInputName(Input.BODY) as
-            | string
-            | undefined;
-        const timeout = this.wave.inputs.getInputValueByInputName(
-            Input.TIMEOUT
-        ) as number;
-        const ignoreSSLCert = this.wave.inputs.getInputValueByInputName(
-            Input.IGNORE_INVALID_SSL_CERTIFICATE
-        ) as boolean;
-        const failOnNon2XXResponse = this.wave.inputs.getInputValueByInputName(
-            Input.FAIL_ON_NON_2XX_RESPONSE
-        ) as boolean;
-        const followRedirects = this.wave.inputs.getInputValueByInputName(
-            Input.FOLLOW_REDIRECTS
-        ) as boolean;
+        const method = this.wave.inputs.getInputValueByInputName(Input.METHOD) as string;
+        const url = this.wave.inputs.getInputValueByInputName(Input.URL) as string;
+        const headers = this.wave.inputs.getInputValueByInputName(Input.HEADERS) as Record<string, string | string[]> | undefined;
+        const data = this.wave.inputs.getInputValueByInputName(Input.BODY) as string | undefined;
+        const timeout = this.wave.inputs.getInputValueByInputName(Input.TIMEOUT) as number;
+        const ignoreSSLCert = this.wave.inputs.getInputValueByInputName(Input.IGNORE_INVALID_SSL_CERTIFICATE) as boolean;
+        const failOnNon2XXResponse = this.wave.inputs.getInputValueByInputName(Input.FAIL_ON_NON_2XX_RESPONSE) as boolean;
+        const followRedirects = this.wave.inputs.getInputValueByInputName(Input.FOLLOW_REDIRECTS) as boolean;
 
         const requestConfig: AxiosRequestConfig = {
             method: method,
@@ -197,8 +176,7 @@ export default class HttpClient extends Node {
         }
 
         if (failOnNon2XXResponse) {
-            requestConfig.validateStatus = (status) =>
-                status >= 200 && status < 300;
+            requestConfig.validateStatus = (status) => status >= 200 && status < 300;
         } else {
             requestConfig.validateStatus = () => true;
         }
@@ -236,10 +214,7 @@ export default class HttpClient extends Node {
                 throw err;
             }
         } finally {
-            this.wave.outputs.setOutput(
-                Output.DURATION,
-                performance.now() - startTime
-            );
+            this.wave.outputs.setOutput(Output.DURATION, performance.now() - startTime);
         }
     }
 
