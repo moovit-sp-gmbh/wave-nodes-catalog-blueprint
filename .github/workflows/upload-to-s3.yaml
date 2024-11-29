@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload catalog and update registry
         id: upload
-        uses: moovit-sp-gmbh/hcloud-catalog-upload-action@main
+        uses: moovit-sp-gmbh/hcloud-catalog-upload-action@v1.0.0
         with:
           endpoint: <S3 endpoint>
           bucket: <name of your S3 bucket>
