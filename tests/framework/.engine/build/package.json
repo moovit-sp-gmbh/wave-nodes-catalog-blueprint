@@ -1,0 +1,80 @@
+{
+    "name": "@moovit-sp-gmbh/wave-engine",
+    "mainVersion": "1",
+    "version": "0.0.0-managed-by-semantic-release",
+    "description": "",
+    "main": "src/index.js",
+    "types": "index.d.ts",
+    "scripts": {
+        "check-types": "tsc",
+        "test": "env TS_NODE_PROJECT=\"tsconfig.testing.json\"  mocha --no-warnings -r ts-node/register './test/**/*.test.ts'",
+        "start:debugger": "nodemon --debug --config nodemon_debugger.json",
+        "start:dev": "nodemon --debug",
+        "start": "eslint . --ext .ts  && pnpm run build && node --experimental-vm-modules --experimental-specifier-resolution=node --no-warnings build/index.js",
+        "build": "tsc --removeComments && tsc --declaration --emitDeclarationOnly",
+        "uglify": "./node_modules/uglifyjs-folder/cli.js build/ -e -c -m -x .js -o build/ --log-level error",
+        "uglifyDist": "./node_modules/uglifyjs-folder/cli.js dist/ -e -c -m -x .js -o dist/ --log-level error",
+        "signEngine": "ts-node devtools/SignEngine.ts",
+        "verifyEngine": "ts-node devtools/VerifyEngine.ts",
+        "testEngine": "node --loader ts-node/esm   --es-module-specifier-resolution node ./devtools/test_engine.ts",
+        "testBuildEngine": "ts-node devtools/test_build.ts",
+        "package": "cd ./build/ && tar -czf ../engine.tar.gz *",
+        "format": "prettier --write 'src/**/*.ts'",
+        "version": "echo $npm_package_version",
+        "lint": "eslint --fix . --ext .ts"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/moovit-sp-gmbh/wave-engine.git"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    },
+    "keywords": [
+        "hcloud",
+        "sdk"
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/moovit-sp-gmbh/wave-engine/issues"
+    },
+    "author": "moovit-sp-gmbh",
+    "homepage": "https://github.com/moovit-sp-gmbh/wave-engine#readme",
+    "devDependencies": {
+        "@commitlint/cli": "^18.6.1",
+        "@commitlint/config-conventional": "^18.6.2",
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/git": "^10.0.1",
+        "@trivago/prettier-plugin-sort-imports": "^4.3.0",
+        "@types/chai": "^4.2.14",
+        "@types/mocha": "^9.0.0",
+        "@types/node": "^20.14.8",
+        "@types/require-from-string": "^1.2.1",
+        "@types/uuid": "^8.3.1",
+        "@typescript-eslint/eslint-plugin": "^5.22.0",
+        "@typescript-eslint/parser": "^5.22.0",
+        "chai": "^4.2.14",
+        "conventional-changelog-conventionalcommits": "^8.0.0",
+        "debug": "^4.3.4",
+        "eslint": "^8.14.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-import": "^2.26.0",
+        "md5-file": "^5.0.0",
+        "mocha": "^10.0.0",
+        "node": "20.14.0",
+        "nodemon": "^2.0.6",
+        "prettier": "^2.6.2",
+        "semantic-release": "^23.0.0",
+        "ts-node": "^10.9.1",
+        "ts-prune": "^0.10.3",
+        "typescript": "^4.6.4",
+        "uglifyjs-folder": "^3.1.2"
+    },
+    "dependencies": {
+        "axios": "^1.6.8",
+        "cp-file": "^9.1.0",
+        "hcloud-sdk": "npm:@moovit-sp-gmbh/hcloud-sdk@16.0.0-staging.2",
+        "require-from-string": "^2.0.2",
+        "uuid": "^8.3.2"
+    }
+}
