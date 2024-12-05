@@ -9,13 +9,13 @@ import { getConfig, loadConfig } from "../config/ConfigReader";
 import { downloadFile } from "./DownloadHelper";
 
 class EngineManager {
-    private folderName = ".engine";
+    private folderName = "engine";
     private baseEngineFolder: string;
     private version: string | undefined;
 
     constructor(engineVersion?: string) {
         this.version = engineVersion;
-        this.baseEngineFolder = path.resolve(__dirname, "..");
+        this.baseEngineFolder = path.resolve(__dirname, "../../../node_modules/");
         this.createBaseEngineFolder();
     }
 
@@ -55,9 +55,14 @@ class EngineManager {
     private async prepareEngine(engine: WaveEngine): Promise<string> {
         let enginePath: string | null = path.join(this.baseEngineFolder, this.folderName);
         const tarFile = path.join(enginePath, "engine.tar");
-        if (existsSync(tarFile) && !(await this.isMd5Match(engine.md5, tarFile, false))) {
+        const isExists = existsSync(tarFile);
+        if ((isExists && !(await this.isMd5Match(engine.md5, tarFile, false))) || !isExists) {
             console.info("Deleting different version of the Engine...");
-            await rm(enginePath, { recursive: true });
+            try {
+                await rm(enginePath, { recursive: true });
+            } catch {
+                /* Do nothing if path is not exist */
+            }
         }
         enginePath = this.getEnginePath();
         if (!enginePath) {
