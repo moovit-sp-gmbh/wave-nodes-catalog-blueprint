@@ -1,5 +1,9 @@
 {
     "compilerOptions": {
+        "target": "ES2022",
+        "module": "commonjs",
+        "lib": ["ES2022"],
+        "allowJs": true,
         /* Visit https://aka.ms/tsconfig to read more about this file */
 
         /* Projects */
