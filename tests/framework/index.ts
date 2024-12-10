@@ -6,7 +6,7 @@ import { EngineManager } from "./helpers/EngineManager";
 import { executeStream } from "./service/StreamService";
 
 const execute = async (engineVersion: string, payload: High5ExecutionPayload, design: Design): Promise<StreamResult> => {
-    const waveEngine = await new EngineManager(engineVersion).getEngine();
+    const waveEngine = await new EngineManager(engineVersion).getEngine(false);
     const executionPackage = {
         design: { nodes: [], startNode: "0" } as DesignBuild,
         payload,
