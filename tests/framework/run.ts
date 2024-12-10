@@ -2,18 +2,18 @@ import { High5ExecutionPayloadType } from "hcloud-sdk/lib/interfaces/high5/space
 import type { StreamNodeResolvedInputs } from "hcloud-sdk/lib/interfaces/high5/space/event/stream/node";
 import initCatalog from "./helpers/CatalogHelper";
 
-const engineVersion = "1.5.0-dev-10";
+const engineVersion = "1.5.0";
+const catalogPath = "../../../../wave-nodes/build/catalog/bundle.js";
 const payload = { type: High5ExecutionPayloadType.JSON, data: "{}" };
 
-initCatalog(engineVersion, "../../../../wave-nodes/build/catalog/bundle.js").then((catalog) => {
+initCatalog(engineVersion, catalogPath).then((catalog) => {
     const design = {
-        node: catalog.UpperCaseAction,
+        node: catalog.PythonAction,
         uuid: 1,
         inputs: [
-            {
-                name: "String",
-                value: "lower-case-line",
-            },
+            { name: "Path to the Python interpreter", value: "python3.10" },
+            { name: "Code", value: "from datetime import datetime; print(datetime.now().isoformat())" },
+            { name: "Dependencies", value: ["requests"] },
         ] as StreamNodeResolvedInputs[],
     };
 
