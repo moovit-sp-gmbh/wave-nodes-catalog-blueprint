@@ -132,7 +132,7 @@ class EngineManager {
      * Get specified version of Wave Engine if available
      * if the version is not specified - get the latest stable version.
      */
-    async getEngine(): Promise<WaveEngine> {
+    async getEngine(download: boolean): Promise<WaveEngine> {
         let engine: WaveEngine | undefined;
         let engines: WaveEngine[] = await this.getEnginesList();
         if (!engines.length) throw new Error("There are no available Wave Engines");
@@ -151,7 +151,9 @@ class EngineManager {
                         .join(", ")}`
                 );
         }
-        await this.prepareEngine(engine);
+        if (download) {
+            await this.prepareEngine(engine);
+        }
         return engine;
     }
 }
