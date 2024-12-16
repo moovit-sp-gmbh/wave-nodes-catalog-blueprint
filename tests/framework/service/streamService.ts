@@ -13,6 +13,8 @@ import Wave from "engine/build/helpers/Wave";
 import { resolveInputs } from "../helpers/InputHelper";
 import { patchEngine } from "./PatchEngine";
 
+const DURATION = "Run time";
+
 const parsePayload = (executionPackage: High5ExecutionPackage) => {
     let payloadData = undefined;
     switch (executionPackage.payload.type) {
@@ -36,6 +38,7 @@ const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, de
     // parse payload
     executionPackage.payload.data = parsePayload(executionPackage);
 
+    let duration: number = 0;
     const nodes: NodeData = {};
     const streamRunner = new StreamRunner(executionPackage as ExtendedHigh5ExecutionPackage);
     const executionStateHelper = new ExecutionStateHelper().init(executionPackage as ExtendedHigh5ExecutionPackage);
@@ -48,6 +51,8 @@ const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, de
         node.setWave(wave);
         await node.run();
         nodes[String(design.uuid)] = { input: node.getInputs() || [], output: node.getOutputs() || [] };
+        duration += nodes[String(design.uuid)].output.filter((out) => out.name === DURATION)[0]?.value || 0;
+        node.setOutput(DURATION, duration);
         if (design?.onSuccess) {
             design = design.onSuccess;
         } else break;
