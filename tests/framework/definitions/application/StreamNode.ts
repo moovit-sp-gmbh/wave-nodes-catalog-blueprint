@@ -1,4 +1,4 @@
-import { StreamNodeOutput, StreamNodeResolvedInput } from "engine/models/StreamNode";
+import { StreamNodeOutput, StreamNodeResolvedInput } from "engine/build/models/StreamNode";
 
 interface NodeInputs {
     [key: string]: unknown;
