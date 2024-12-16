@@ -3,10 +3,11 @@ import {
     High5ExecutionPackage,
     High5ExecutionPayloadType,
 } from "hcloud-sdk/lib/interfaces/high5/space/execution/index";
-import { Design } from "../definitions/application/Design";
-import { NodeData } from "../definitions/application/StreamNode";
+import type { StreamResult } from "engine/build/models/StreamResult";
+import type { Design } from "../definitions/application/Design";
+import type { NodeData } from "../definitions/application/StreamNode";
 import ExecutionStateHelper from "engine/build/helpers/ExecutionStateHelper";
-import { StreamResult } from "engine/build/models/StreamResult";
+import type { StreamNodeOutput } from "engine/build/models/StreamNode";
 import StreamRunner from "engine/build/utils/StreamRunner";
 import Wave from "engine/build/helpers/Wave";
 import { resolveInputs } from "../helpers/InputHelper";
@@ -31,22 +32,28 @@ const parsePayload = (executionPackage: High5ExecutionPackage) => {
     return payloadData;
 };
 
-const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, design: Design): Promise<StreamResult> => {
+const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, design: Design): Promise<StreamNodeOutput[]> => {
     // parse payload
     executionPackage.payload.data = parsePayload(executionPackage);
 
     const nodes: NodeData = {};
     const streamRunner = new StreamRunner(executionPackage as ExtendedHigh5ExecutionPackage);
+    const executionStateHelper = new ExecutionStateHelper().init(executionPackage as ExtendedHigh5ExecutionPackage);
 
-    const node = new design.node(executionPackage, {} as StreamResult, resolveInputs(design.inputs, nodes));
-    node.setExecutionStateHelper(new ExecutionStateHelper().init(executionPackage as ExtendedHigh5ExecutionPackage));
-    const wave = patchEngine(new Wave(node, streamRunner), executionPackage.waveEngine.version);
-    node.setWave(wave);
-    await node.run();
-    nodes[String(design.uuid)] = { input: node.getInputs() || [], output: node.getOutputs() || [] };
-    console.log(nodes);
+    while (design) {
+        console.info("• Execute node:", design.node.name);
+        const node = new design.node(executionPackage, {} as StreamResult, resolveInputs(design.inputs, nodes));
+        node.setExecutionStateHelper(executionStateHelper);
+        const wave = patchEngine(new Wave(node, streamRunner), executionPackage.waveEngine.version);
+        node.setWave(wave);
+        await node.run();
+        nodes[String(design.uuid)] = { input: node.getInputs() || [], output: node.getOutputs() || [] };
+        if (design?.onSuccess) {
+            design = design.onSuccess;
+        } else break;
+    }
 
-    return {} as StreamResult;
+    return nodes[String(design.uuid)].output;
 };
 
 export { executeStream };
