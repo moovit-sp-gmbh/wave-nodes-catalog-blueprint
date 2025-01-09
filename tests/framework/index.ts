@@ -3,7 +3,6 @@ import { DesignBuild } from "hcloud-sdk/lib/interfaces/high5/space/event/stream"
 import { ExtendedHigh5ExecutionPackage, High5ExecutionPayload } from "hcloud-sdk/lib/interfaces/high5/space/execution";
 import { Design } from "./definitions/application/Design";
 import { EngineManager } from "./helpers/EngineManager";
-import { executeStream } from "./service/StreamService";
 
 const execute = async (engineVersion: string, payload: High5ExecutionPayload, design: Design) => {
     const waveEngine = await new EngineManager(engineVersion).getEngine(false);
@@ -21,6 +20,7 @@ const execute = async (engineVersion: string, payload: High5ExecutionPayload, de
         info: { target: "o.hryshchenko+framework@moovit-sp.com" },
     } as unknown as ExtendedHigh5ExecutionPackage;
 
+    const { executeStream } = await import("./service/StreamService");
     return await executeStream(executionPackage, design);
 };
 
