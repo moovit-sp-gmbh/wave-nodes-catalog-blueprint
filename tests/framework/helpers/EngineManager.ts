@@ -1,21 +1,24 @@
 import crypto from "crypto";
 import { existsSync, mkdirSync } from "fs";
 import fs, { rm } from "fs/promises";
+import { homedir } from "os";
 import hcloud from "hcloud-sdk";
 import { Engine, EngineRegistry, WaveEngine } from "hcloud-sdk/lib/interfaces/high5/wave";
 import path from "path";
 import tar from "tar";
+import { load, dump } from "js-yaml";
 import { getConfig, loadConfig } from "../config/ConfigReader";
 import { downloadFile } from "./DownloadHelper";
 
 class EngineManager {
-    private folderName = "engine";
+    private folderName = "engines";
     private baseEngineFolder: string;
     private version: string | undefined;
+    private metadataFile = "index.yaml";
 
     constructor(engineVersion?: string) {
         this.version = engineVersion;
-        this.baseEngineFolder = path.resolve(__dirname, "../../../node_modules/");
+        this.baseEngineFolder = path.join(homedir(), ".hcloud", "framework");
         this.createBaseEngineFolder();
     }
 
@@ -32,8 +35,8 @@ class EngineManager {
         }
     }
 
-    private getEnginePath(): string | null {
-        const enginePath = path.join(this.baseEngineFolder, this.folderName, "build", "index.js");
+    private getEnginePath(md5: string): string | null {
+        const enginePath = path.join(this.baseEngineFolder, this.folderName, md5, "build", "index.js");
         return existsSync(enginePath) ? enginePath : null;
     }
 
@@ -53,7 +56,7 @@ class EngineManager {
     }
 
     private async prepareEngine(engine: WaveEngine): Promise<string> {
-        let enginePath: string | null = path.join(this.baseEngineFolder, this.folderName);
+        let enginePath: string | null = path.join(this.baseEngineFolder, this.folderName, engine.md5);
         const tarFile = path.join(enginePath, "engine.tar");
         const isExists = existsSync(tarFile);
         if ((isExists && !(await this.isMd5Match(engine.md5, tarFile, false))) || !isExists) {
@@ -64,10 +67,10 @@ class EngineManager {
                 /* Do nothing if path is not exist */
             }
         }
-        enginePath = this.getEnginePath();
+        enginePath = this.getEnginePath(engine.md5);
         if (!enginePath) {
             console.info(`Engine ${engine.version} not found. Downloading and unpacking...`);
-            enginePath = path.join(this.baseEngineFolder, this.folderName);
+            enginePath = path.join(this.baseEngineFolder, this.folderName, engine.md5);
             console.log(`Storing new engine at ${enginePath}`);
             mkdirSync(enginePath, { recursive: true });
             try {
@@ -101,6 +104,32 @@ class EngineManager {
         return true;
     }
 
+    private async loadMetadata(): Promise<WaveEngine | undefined> {
+        const metadataFile = path.join(this.baseEngineFolder, this.folderName, this.metadataFile);
+        if (!existsSync(metadataFile)) return undefined;
+        const content = load(await fs.readFile(metadataFile, "utf8")) as Record<string, WaveEngine>;
+        if (this.version && content && this.version in content) {
+            return existsSync(path.join(this.baseEngineFolder, this.folderName, content[this.version].md5, "build", "index.js"))
+                ? content[this.version]
+                : undefined;
+        }
+        return undefined;
+    }
+
+    private async updateMetadata(engine: WaveEngine): Promise<void> {
+        const metadataFile = path.join(this.baseEngineFolder, this.folderName, this.metadataFile);
+        let content: Record<string, WaveEngine> = {};
+        if (existsSync(metadataFile)) {
+            content = load(await fs.readFile(metadataFile, "utf8")) as Record<string, WaveEngine>;
+        }
+        content[engine.version as string] = engine;
+        try {
+            await fs.writeFile(metadataFile, dump(content), "utf8");
+        } catch (err) {
+            console.error(`Error writing engines metadata "${String(err)}" to "${metadataFile}"`);
+        }
+    }
+
     /**
      * Download the registry of all available Wave Engines.
      */
@@ -131,9 +160,13 @@ class EngineManager {
     /**
      * Get specified version of Wave Engine if available
      * if the version is not specified - get the latest stable version.
+     * @returns Path to downloaded engine
      */
-    async getEngine(download: boolean): Promise<WaveEngine> {
+    async getEngine(): Promise<WaveEngine & { path: string }> {
         let engine: WaveEngine | undefined;
+        engine = await this.loadMetadata();
+        if (engine) return { ...engine, path: path.join(this.baseEngineFolder, this.folderName, engine.md5, "build") };
+
         let engines: WaveEngine[] = await this.getEnginesList();
         if (!engines.length) throw new Error("There are no available Wave Engines");
         // in case of a version being set it is a patchEngine request and it could be a dev version
@@ -151,10 +184,11 @@ class EngineManager {
                         .join(", ")}`
                 );
         }
-        if (download) {
-            await this.prepareEngine(engine);
-        }
-        return engine;
+
+        await this.prepareEngine(engine);
+        await this.updateMetadata(engine);
+
+        return { ...engine, path: path.join(this.baseEngineFolder, this.folderName, engine.md5, "build") };
     }
 }
 

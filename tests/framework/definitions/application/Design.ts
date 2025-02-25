@@ -1,5 +1,5 @@
 import { ExtendedHigh5ExecutionPackage } from "hcloud-sdk/lib/interfaces/high5/space/execution";
-import type { StreamNodeAdditionalConnector } from "../../.engine/build/models/StreamNode";
+import type { StreamNodeAdditionalConnector } from "engine/build/models/StreamNode";
 import type { StreamResult } from "engine/build/models/StreamResult";
 import type Node from "engine/build/nodes/Node";
 import type { NodeInputs } from "./Inputs";

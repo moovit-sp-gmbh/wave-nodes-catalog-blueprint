@@ -5,7 +5,7 @@ import { Design } from "./definitions/application/Design";
 import { EngineManager } from "./helpers/EngineManager";
 
 const execute = async (engineVersion: string, payload: High5ExecutionPayload, design: Design) => {
-    const waveEngine = await new EngineManager(engineVersion).getEngine(false);
+    const waveEngine = await new EngineManager(engineVersion).getEngine();
     const executionPackage = {
         design: { nodes: [], startNode: "0" } as DesignBuild,
         payload,
