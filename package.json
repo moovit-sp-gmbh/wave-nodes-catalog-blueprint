@@ -37,7 +37,8 @@
         "axios": "^1.9.0",
         "hcloud-sdk": "^16.0.0",
         "js-yaml": "^4.1.0",
-        "tar": "^7.4.3"
+        "tar": "^7.4.3",
+        "wave-engine": "^1.6.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.27.0",

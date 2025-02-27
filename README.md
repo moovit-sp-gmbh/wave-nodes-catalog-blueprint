@@ -79,7 +79,7 @@ This class should be exportable by default to be available for use from outside:
 
 ```typescript
 export default class SomeAction extends Node {
-    wave!: WaveHelper; // This property will be inserted at runtime don't implement it
+    wave!: Wave; // This property will be inserted at runtime don't implement it
     specification: StreamNodeSpecificationV2 = { ... };
     execute(): Promise<void> { ... };
 }
