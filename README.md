@@ -32,7 +32,11 @@ To test your nodes it is necessary to have a [helmut.cloud Agent](https://app.he
 
     npm run link
 
-After that you will need to paste the node specification in the search bar of the Stream Designer Studio. You can obtain this using the `spec` script and copying the JSON written to standard out. The `--silent` argument is important to prevent npm from writing to stdout if you want to pipe or redirect the command output.
+After that you will need to paste the node specification into the Stream Designer Studio. Press `cmd+k` which will cause a dialog to popup where you need to find `Import node specification`.
+
+![Import node specification](./assets/import-node-spec.png)
+
+The specification can be obtained by using the `spec` script and copying the JSON written to standard out. The `--silent` argument is important to prevent npm from writing to stdout if you want to pipe or redirect the command output.
 
     npm run --silent spec -- <name of your node>
 
