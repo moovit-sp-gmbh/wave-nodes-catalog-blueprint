@@ -1,6 +1,5 @@
 import { StreamNodeResolvedInputs } from "hcloud-sdk/lib/interfaces/high5";
-import type { NodeData } from "../definitions/application/StreamNode";
-import type { NodeInputs } from "../definitions/application/StreamNode";
+import type { NodeData, NodeInputs } from "../definitions/application/StreamNode";
 
 function parseValue<T>(original: T, nodeData: NodeData): T {
     if (typeof original !== "string") return original;
@@ -9,11 +8,9 @@ function parseValue<T>(original: T, nodeData: NodeData): T {
     if (!Object.prototype.hasOwnProperty.call(nodeData, matches[1]))
         throw new Error(`Wrong value template ${original} - the design has no node with uuid ${matches[1]}.`);
     try {
-        return nodeData[matches[1]].output.filter((e) => e.name === matches[2])[0].value;
+        return nodeData[matches[1]].output.filter(e => e.name === matches[2])[0].value;
     } catch {
-        throw new Error(
-            `There are no results of execution of the node with uuid ${matches[1]} or specified an incorrect name of the output field`
-        );
+        throw new Error(`There are no results of execution of the node with uuid ${matches[1]} or specified an incorrect name of the output field`);
     }
 }
 

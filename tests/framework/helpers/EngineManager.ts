@@ -1,12 +1,12 @@
 import crypto from "crypto";
 import { existsSync, mkdirSync } from "fs";
 import fs, { rm } from "fs/promises";
-import { homedir } from "os";
 import hcloud from "hcloud-sdk";
 import { Engine, EngineRegistry, WaveEngine } from "hcloud-sdk/lib/interfaces/high5/wave";
+import { dump, load } from "js-yaml";
+import { homedir } from "os";
 import path from "path";
 import tar from "tar";
-import { load, dump } from "js-yaml";
 import { getConfig, loadConfig } from "../config/ConfigReader";
 import { downloadFile } from "./DownloadHelper";
 
@@ -30,8 +30,7 @@ class EngineManager {
         } catch (error) {
             console.error(`Can not create engines folder: '${String(error)}`);
             const stat = await fs.stat(this.baseEngineFolder);
-            if (!stat.isDirectory())
-                throw new Error(`Unable to create engine folder. A file already exists with the same path. ${this.baseEngineFolder}`);
+            if (!stat.isDirectory()) throw new Error(`Unable to create engine folder. A file already exists with the same path. ${this.baseEngineFolder}`);
         }
     }
 
@@ -109,9 +108,7 @@ class EngineManager {
         if (!existsSync(metadataFile)) return undefined;
         const content = load(await fs.readFile(metadataFile, "utf8")) as Record<string, WaveEngine>;
         if (this.version && content && this.version in content) {
-            return existsSync(path.join(this.baseEngineFolder, this.folderName, content[this.version].md5, "build", "index.js"))
-                ? content[this.version]
-                : undefined;
+            return existsSync(path.join(this.baseEngineFolder, this.folderName, content[this.version].md5, "build", "index.js")) ? content[this.version] : undefined;
         }
         return undefined;
     }
@@ -175,11 +172,11 @@ class EngineManager {
             engines = engines.filter((engine: WaveEngine) => !engine.dev);
             engine = engines[engines.length - 1];
         } else {
-            engine = engines.find((e) => e.version === this.version);
+            engine = engines.find(e => e.version === this.version);
             if (!engine)
                 throw new Error(
                     `Wave Engine version ${this.version} does not exist, please try one of the following values: ${engines
-                        .map((e) => e.version)
+                        .map(e => e.version)
                         .sort()
                         .join(", ")}`
                 );
