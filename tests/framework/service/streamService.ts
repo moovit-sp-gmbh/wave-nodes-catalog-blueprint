@@ -1,14 +1,11 @@
-import {
-    ExtendedHigh5ExecutionPackage,
-    High5ExecutionPackage,
-    High5ExecutionPayloadType,
-} from "hcloud-sdk/lib/interfaces/high5/space/execution/index";
+import { High5ExecutionPackage, High5ExecutionPayloadType } from "hcloud-sdk/lib/interfaces/high5/space/execution";
 import type { Design } from "../definitions/application/Design";
+import type { ExtendedHigh5ExecutionPackage } from "../definitions/application/Execution";
 import type { NodeData } from "../definitions/application/StreamNode";
 import { resolveInputs } from "../helpers/InputHelper";
 import { patchEngine } from "./PatchEngine";
 
-const DURATION = "Run time";
+const DURATION_OUTPUT_NAME = "Run time";
 
 const parsePayload = (executionPackage: High5ExecutionPackage) => {
     let payloadData = undefined;
@@ -33,10 +30,10 @@ const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, de
     // parse payload
     executionPackage.payload.data = parsePayload(executionPackage);
 
-    const execution = await import("engine/build/helpers/ExecutionStateHelper");
-    const runner = await import("engine/build/utils/StreamRunner");
-    const wave = await import("engine/build/helpers/Wave");
-    const { StreamResult } = await import("engine/build/models/StreamResult");
+    const execution = await import("../engine/build/helpers/ExecutionStateHelper");
+    const runner = await import("../engine/build/utils/StreamRunner");
+    const wave = await import("../engine/build/helpers/Wave");
+    const { StreamResult } = await import("../engine/build/models/StreamResult");
 
     let duration: number = 0;
     const nodes: NodeData = {};
@@ -51,8 +48,8 @@ const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, de
         node.setWave(w);
         await node.run();
         nodes[String(design.uuid)] = { input: node.getInputs() || [], output: node.getOutputs() || [] };
-        duration += nodes[String(design.uuid)].output.filter((out) => out.name === DURATION)[0]?.value || 0;
-        node.setOutput(DURATION, duration);
+        duration += nodes[String(design.uuid)].output.filter(out => out.name === DURATION_OUTPUT_NAME)[0]?.value || 0;
+        node.setOutput(DURATION_OUTPUT_NAME, duration);
         if (design?.onSuccess) {
             design = design.onSuccess;
         } else break;
