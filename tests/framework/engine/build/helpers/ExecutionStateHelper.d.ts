@@ -7,6 +7,7 @@ import {
     StreamRunningNodePatch,
 } from "hcloud-sdk/lib/interfaces/high5/space/execution/index";
 import { StreamSingleNodeResult } from "../models/StreamSingleNodeResult";
+import { AgentInfo } from "../utils/StreamRunner";
 
 export interface ExecutionState {
     status: High5ExecutionPatchStatus;
@@ -18,9 +19,10 @@ export default class ExecutionStateHelper {
     private streamLog;
     private executionPackage;
     private resetState;
-    init(executionPackage: ExtendedHigh5ExecutionPackage): ExecutionStateHelper;
+    init(executionPackage: ExtendedHigh5ExecutionPackage, agentInfo?: AgentInfo): ExecutionStateHelper;
     getStatusAndLogs(): ExecutionState;
     updateStateAndOutcome(statusUpdate: { state?: High5ExecutionState; outcome?: High5ExecutionOutcome }): void;
+    updateState(state?: High5ExecutionState): void;
     addRunningNode(node: StreamRunningNodePatch): void;
     removeRunningNode(nodeUuid: string): void;
     updateProgressAndMessage(

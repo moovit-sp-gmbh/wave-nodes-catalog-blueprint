@@ -38,16 +38,36 @@ declare class StreamRunner {
     processDebug(dry: boolean, startNode?: StreamNode): Promise<SDKStreamResult>;
     setStreamNode(node: StreamNode): void;
     removeNodeResult(uuid: string): void;
+    clearNodeResults(): void;
     setNodeResultValue(uuid: string, key: string, value: unknown): void;
+    /**
+     * Only ip and version will be used from the agentInfo comming from the Agent, the rest will be populated here in the wave-engine to
+     * keep information consistent with wildcards and to avoid potential agent versioning issues.
+     */
+    setAgentInfo(agentInfo?: AgentInfo): void;
+    setMacOSUsedMem(): Promise<void>;
     cleanup(): Promise<void>;
 }
 export type AgentInfo = {
     os: {
-        platform: string;
         type: string;
+        platform: string;
+        release: string;
+        version: string;
     };
     cpu: string;
+    cpuArchitecture: string;
     hostname: string;
+    memory: {
+        total: number;
+        used: number;
+    };
+    connectionUptime: number;
+    nics: {
+        ip: string;
+        mac: string;
+    }[];
+    installerVersion?: string;
     ip?: string;
     version?: string;
 };

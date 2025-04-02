@@ -25,5 +25,14 @@ type StreamInfo = {
         callbackUrl: string;
     };
     target?: string;
+    trigger?: {
+        source: string;
+        ip: string;
+        country: string;
+    };
+    isPool?: boolean;
+    poolName?: string;
+    waveEngine?: string;
+    uuid?: string;
 };
 export {};

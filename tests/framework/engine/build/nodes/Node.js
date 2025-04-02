@@ -167,12 +167,26 @@ class Node {
                             break;
                         case wave_1.StreamNodeSpecificationInputType.NUMBER:
                             if (typeof input.value !== "number") {
-                                throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "number", typeof input.value);
+                                const n = Number(input.value);
+                                if (!isNaN(n)) {
+                                    input.value = n;
+                                }
+                                else {
+                                    throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "number", typeof input.value);
+                                }
                             }
                             break;
                         case wave_1.StreamNodeSpecificationInputType.BOOLEAN:
                             if (typeof input.value !== "boolean") {
-                                throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "boolean", typeof input.value);
+                                if (input.value === "true") {
+                                    input.value = true;
+                                }
+                                else if (input.value === "false") {
+                                    input.value = false;
+                                }
+                                else {
+                                    throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "boolean", typeof input.value);
+                                }
                             }
                             break;
                         case wave_1.StreamNodeSpecificationInputType.STRING_MAP:
@@ -199,8 +213,14 @@ class Node {
                             }
                             break;
                         case wave_1.StreamNodeSpecificationInputType.STRING_LIST:
-                            if (typeof input.value !== "object" || !Array.isArray(input.value) || input.value.find((i) => typeof i !== "string")) {
+                            if (typeof input.value !== "object" || !Array.isArray(input.value)) {
                                 throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "string[]", typeof input.value);
+                            }
+                            else {
+                                const invalidEntry = input.value.find((i) => typeof i !== "string");
+                                if (invalidEntry) {
+                                    throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "string[]", typeof invalidEntry);
+                                }
                             }
                             break;
                         case wave_1.StreamNodeSpecificationInputType.ANY:

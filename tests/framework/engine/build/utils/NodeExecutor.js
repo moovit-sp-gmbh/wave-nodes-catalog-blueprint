@@ -36,7 +36,9 @@ class NodeExecutor {
             this.streamResult.nodeResults.push(nodeResult);
             if (!nextNode.bypass) {
                 const node = await (0, NodeImport_1.requireNodeByPath)(nextNode, catalogPath, isAdditionalConnector, extraCatalogLocations, this.executionPackage.hcl.getAuthToken());
-                nodeResult.streamNode.catalog.name = node[NodeImport_1.NODE_CATALOG_NAME];
+                if (nodeResult.streamNode.catalog !== undefined && nodeResult.streamNode.catalog !== null) {
+                    nodeResult.streamNode.catalog.name = node[NodeImport_1.NODE_CATALOG_NAME];
+                }
                 let n;
                 try {
                     n = new node(this.executionPackage, this.streamResult, nextNode.inputs, nextNode.additionalConnectors);
@@ -124,7 +126,9 @@ class NodeExecutor {
     }
     async prepare(catalogPath, extraCatalogLocations, isAdditionalConnector = false) {
         const node = await (0, NodeImport_1.requireNodeByPath)(this.node, catalogPath, isAdditionalConnector, extraCatalogLocations, this.executionPackage.hcl.getAuthToken());
-        this.result.streamNode.catalog.name = node[NodeImport_1.NODE_CATALOG_NAME];
+        if (this.result.streamNode.catalog !== undefined && this.result.streamNode.catalog !== null) {
+            this.result.streamNode.catalog.name = node[NodeImport_1.NODE_CATALOG_NAME];
+        }
         let n;
         try {
             n = new node(this.executionPackage, this.streamResult, this.node.inputs, this.node.additionalConnectors);

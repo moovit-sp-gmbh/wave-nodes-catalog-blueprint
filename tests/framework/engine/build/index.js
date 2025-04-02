@@ -12,7 +12,7 @@ process.on("unhandledRejection", () => {
 class Engine extends StreamRunner_1.default {
     constructor(executionPackage, _, catalogPath, agentInfo) {
         super(executionPackage, undefined, catalogPath, agentInfo);
-        this.executionStateHelper = new ExecutionStateHelper_1.default().init(executionPackage);
+        this.executionStateHelper = new ExecutionStateHelper_1.default().init(executionPackage, this.agentInfo);
     }
     getStatusAndLogs() {
         return this.executionStateHelper.getStatusAndLogs();

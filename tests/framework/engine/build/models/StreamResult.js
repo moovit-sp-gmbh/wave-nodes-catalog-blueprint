@@ -13,6 +13,14 @@ class StreamResult {
     streamVariables;
     runner;
     get info() {
+        let trigger;
+        if (this.runner.executionPackage.info.triggerDetails) {
+            trigger = {
+                source: this.runner.executionPackage.info.triggerDetails.source,
+                ip: this.runner.executionPackage.info.triggerDetails.ip,
+                country: this.runner.executionPackage.info.triggerDetails.country,
+            };
+        }
         return {
             startDate: this.startTimestamp,
             endDate: this.endTimestamp,
@@ -23,6 +31,11 @@ class StreamResult {
                 }
                 : undefined,
             target: this.runner.executionPackage.info?.target,
+            trigger: trigger,
+            uuid: this.runner.executionPackage.executionId,
+            waveEngine: this.runner.executionPackage.waveEngine.version,
+            isPool: this.runner.executionPackage.poolName ? true : false,
+            poolName: this.runner.executionPackage.poolName,
         };
     }
     static create(obj) {
