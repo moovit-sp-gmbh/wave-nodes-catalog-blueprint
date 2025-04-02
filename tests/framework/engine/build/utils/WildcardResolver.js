@@ -33,7 +33,12 @@ class WildcardResolver {
                             if (typeof result === "object") {
                                 result = JSON.stringify(result);
                             }
-                            input = input.split(`{{${wildcard}}}`).join(result);
+                            if (input === `{{${wildcard}}}`) {
+                                return result;
+                            }
+                            else {
+                                input = input.split(`{{${wildcard}}}`).join(result);
+                            }
                         }
                     }
                 }
@@ -42,7 +47,7 @@ class WildcardResolver {
                 break;
             }
         }
-        return /^-?\d+$/.test(input) ? Number(input) : input;
+        return input;
     }
     processWildcard(wildcard, interrupt) {
         const [type, ...path] = splitWildcard(wildcard);

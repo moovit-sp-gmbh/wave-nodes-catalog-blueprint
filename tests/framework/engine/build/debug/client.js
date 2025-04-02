@@ -54,5 +54,10 @@ class DebugClient {
             node,
         });
     }
+    restart() {
+        this.res({
+            type: high5_1.CommandType.RESTART,
+        });
+    }
 }
 exports.default = DebugClient;

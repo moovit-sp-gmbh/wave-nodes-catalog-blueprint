@@ -9,6 +9,9 @@ const high5_1 = require("hcloud-sdk/lib/interfaces/high5");
 const execution_1 = require("hcloud-sdk/lib/interfaces/high5/space/execution");
 const os_1 = __importDefault(require("os"));
 const client_1 = __importDefault(require("../debug/client"));
+const MacOSMemory_1 = require("../helpers/osHelper/MacOSMemory");
+const MacOSVersion_1 = require("../helpers/osHelper/MacOSVersion");
+const WindowsVersion_1 = require("../helpers/osHelper/WindowsVersion");
 const StreamResult_1 = require("../models/StreamResult");
 const StreamSingleNodeResult_1 = require("../models/StreamSingleNodeResult");
 const NodeExecutor_1 = __importDefault(require("./NodeExecutor"));
@@ -28,17 +31,7 @@ class StreamRunner {
     constructor(executionPackage, streamResult, catalogPath, agentInfo) {
         this.executionPackage = executionPackage;
         this.catalogPath = catalogPath;
-        if (agentInfo === undefined) {
-            agentInfo = {
-                os: {
-                    platform: os_1.default.platform(),
-                    type: os_1.default.type(),
-                },
-                cpu: os_1.default.cpus()[0].model,
-                hostname: os_1.default.hostname(),
-            };
-        }
-        this.agentInfo = agentInfo;
+        this.setAgentInfo(agentInfo);
         this.streamResult =
             streamResult ??
                 StreamResult_1.StreamResult.create({
@@ -67,6 +60,7 @@ class StreamRunner {
         nextNodeUUID = nextNodeUUID ?? this.executionPackage.design.startNode;
         const cleanupFns = [];
         while (nextNodeUUID !== undefined && this.executionStateHelper.getOutcome() !== execution_1.High5ExecutionOutcome.CANCELED) {
+            await this.setMacOSUsedMem();
             const nodeExecutionResult = await new NodeExecutor_1.default(nextNodeUUID, this.executionPackage, this.streamResult).process(dry, this.executionStateHelper, this, isAdditionalConnector, this.catalogPath, this.extraCatalogLocations);
             executionStateHelper.updateNodeResult(nodeExecutionResult.nodeResult);
             nextNodeUUID = undefined;
@@ -97,7 +91,8 @@ class StreamRunner {
     }
     async processDebug(dry, startNode) {
         if (!startNode) {
-            this.currentNode = this.executionPackage.design.nodes.find(n => n.uuid === this.executionPackage.design.startNode);
+            startNode = this.executionPackage.design.nodes.find(n => n.uuid === this.executionPackage.design.startNode);
+            this.currentNode = startNode;
         }
         nodeExecutionLoop: while (this.currentNode !== undefined && this.executionStateHelper.getOutcome() !== execution_1.High5ExecutionOutcome.CANCELED) {
             const nodeResult = StreamSingleNodeResult_1.StreamSingleNodeResult.create({
@@ -119,7 +114,7 @@ class StreamRunner {
             this.executionStateHelper.updateNodeResult(nodeResult);
             nodeResult.executableNode = executableNode;
             const nodeSpec = executableNode.getNodeSpecification();
-            if ((0, high5_1.isStreamNodeSpecificationV1)(nodeSpec) || (0, high5_1.isStreamNodeSpecificationV2)(nodeSpec)) {
+            if ((0, high5_1.isStreamNodeSpecificationV1)(nodeSpec) || (0, high5_1.isStreamNodeSpecificationV2)(nodeSpec) || (0, high5_1.isStreamNodeSpecificationV3)(nodeSpec)) {
                 this.executionStateHelper.addRunningNode({
                     uuid: this.currentNode.uuid,
                     name: nodeSpec.name,
@@ -129,24 +124,27 @@ class StreamRunner {
             }
             else {
                 nodeExecutor.error(new Error(`Unrecognized node specification version ${nodeSpec.specVersion}`));
-                return this.streamResult;
+                return this.streamResult.lean();
             }
             debugLoop: for (;;) {
                 let command = undefined;
                 if (this.debug === DebugState.STEP) {
                     nodeResult.waiting = true;
                     this.executionStateHelper.updateNodeResult(nodeResult);
+                    this.executionStateHelper.updateState(execution_1.High5ExecutionState.WAITING);
                     command = await this.debugClient.wait(StreamRunner.DEBUG_TIMEOUT);
                 }
                 else if (this.debug === DebugState.CONTINUE && this.currentNode.breakpoint) {
                     nodeResult.waiting = true;
                     this.executionStateHelper.updateNodeResult(nodeResult);
+                    this.executionStateHelper.updateState(execution_1.High5ExecutionState.WAITING);
                     command = await this.debugClient.wait(StreamRunner.DEBUG_TIMEOUT);
                 }
                 else {
                     break debugLoop;
                 }
                 nodeResult.waiting = false;
+                this.executionStateHelper.updateState(execution_1.High5ExecutionState.RUNNING);
                 if (command !== undefined) {
                     switch (command.type) {
                         case high5_1.CommandType.CONTINUE:
@@ -159,7 +157,7 @@ class StreamRunner {
                             this.debug = DebugState.STEP;
                             const prevExec = this.executionStack.pop();
                             if (!prevExec) {
-                                break debugLoop;
+                                continue debugLoop;
                             }
                             this.executionStateHelper.removeRunningNode(this.currentNode.uuid);
                             this.executionStateHelper.removeNodeResult(nodeResult.uuid);
@@ -173,14 +171,29 @@ class StreamRunner {
                             this.setNodeResultValue(command.uuid, command.key, command.value);
                             break;
                         case high5_1.CommandType.REPLACE_NODE:
+                            if (startNode?.uuid === command.node.uuid) {
+                                startNode = command.node;
+                            }
+                            this.setStreamNode(command.node);
                             if (command.node.uuid === this.currentNode.uuid) {
                                 this.executionStateHelper.removeRunningNode(this.currentNode.uuid);
                                 this.executionStateHelper.removeNodeResult(nodeResult.uuid);
                                 this.removeNodeResult(nodeResult.uuid);
+                                this.currentNode = command.node;
                                 continue nodeExecutionLoop;
                             }
-                            this.setStreamNode(command.node);
-                            break;
+                            continue debugLoop;
+                        case high5_1.CommandType.RESTART: {
+                            this.debug = DebugState.CONTINUE;
+                            this.executionStateHelper.removeRunningNode(this.currentNode.uuid);
+                            for (const res of this.streamResult.nodeResults) {
+                                this.executionStateHelper.removeNodeResult(res.uuid);
+                            }
+                            this.clearNodeResults();
+                            this.executionStack = [];
+                            this.currentNode = startNode;
+                            continue nodeExecutionLoop;
+                        }
                         default:
                             this.executionStateHelper.setStreamMessage(`received unknown debug command ${command.type}`);
                             break;
@@ -220,6 +233,9 @@ class StreamRunner {
         if (idx !== -1) {
             this.streamResult.nodeResults.splice(idx, 1);
         }
+    }
+    clearNodeResults() {
+        this.streamResult.nodeResults = [];
     }
     setNodeResultValue(uuid, key, value) {
         const nodeResult = this.streamResult.nodeResults.find(nr => nr.uuid === uuid);
@@ -282,6 +298,64 @@ class StreamRunner {
         if (elem) {
             elem.value = value;
             this.executionStateHelper.updateNodeResult(nodeResult);
+        }
+    }
+    setAgentInfo(agentInfo) {
+        let osPlatform, osRelease, osVersion;
+        if (os_1.default.platform() === "darwin") {
+            const { platform, version, release } = (0, MacOSVersion_1.getMacOSVersion)();
+            osPlatform = platform;
+            osRelease = release;
+            osVersion = version;
+        }
+        else if (os_1.default.platform() === "win32") {
+            const { platform, version, release } = (0, WindowsVersion_1.getWindowsVersion)();
+            osPlatform = platform;
+            osRelease = release;
+            osVersion = version;
+        }
+        else {
+            osPlatform = os_1.default.platform();
+            osRelease = os_1.default.release();
+            osVersion = os_1.default.version();
+        }
+        const networkInterfaces = os_1.default.networkInterfaces();
+        const nics = [];
+        for (const interfaceName in networkInterfaces) {
+            networkInterfaces[interfaceName]?.forEach(({ internal, address, mac }) => {
+                if (!internal) {
+                    nics.push({ ip: address, mac });
+                }
+            });
+        }
+        this.agentInfo = {
+            os: {
+                type: os_1.default.type(),
+                platform: osPlatform,
+                release: osRelease,
+                version: osVersion,
+            },
+            cpu: os_1.default.cpus()[0]?.model,
+            cpuArchitecture: os_1.default.arch(),
+            hostname: os_1.default.hostname(),
+            memory: {
+                total: os_1.default.totalmem(),
+                used: 0,
+            },
+            connectionUptime: process.uptime() * 1000,
+            nics: nics,
+            installerVersion: process.env.INSTALLER_VERSION,
+            ip: agentInfo?.ip,
+            version: agentInfo?.version,
+        };
+    }
+    async setMacOSUsedMem() {
+        if (os_1.default.platform() === "darwin") {
+            const freeMem = await (0, MacOSMemory_1.getMacOSFreeMem)();
+            this.agentInfo.memory.used = os_1.default.totalmem() - freeMem;
+        }
+        else {
+            this.agentInfo.memory.used = os_1.default.totalmem() - os_1.default.freemem();
         }
     }
     async cleanup() {

@@ -121,7 +121,7 @@ class EngineManager {
         }
         content[engine.version as string] = engine;
         try {
-            await fs.writeFile(metadataFile, dump(content), "utf8");
+            await fs.writeFile(metadataFile, dump(content, { sortKeys: true }), "utf8");
         } catch (err) {
             console.error(`Error writing engines metadata "${String(err)}" to "${metadataFile}"`);
         }

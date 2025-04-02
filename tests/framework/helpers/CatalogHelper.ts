@@ -1,12 +1,9 @@
-import path from "path";
 import { NodeConstructor } from "../definitions/application/NodeConstructor";
-import { EngineManager } from "./EngineManager";
+import Node from "../engine/build/nodes/Node";
 
-const initCatalog = async (engineVersion: string, catalogPath: string): Promise<Record<string, NodeConstructor>> => {
-    await new EngineManager(engineVersion).getEngine();
+const initCatalog = async (catalogPath: string): Promise<Record<string, NodeConstructor>> => {
     const catalogModule = await import(catalogPath);
-    const nodeModule = await import(path.join("..", "engine", "build", "nodes", "Node"));
-    return new catalogModule.Catalog(nodeModule.default).nodeCatalog;
+    return new catalogModule.Catalog(Node).nodeCatalog;
 };
 
 export { initCatalog as default };

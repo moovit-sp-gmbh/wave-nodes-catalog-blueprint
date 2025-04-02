@@ -11,7 +11,7 @@ class ExecutionStateHelper {
     streamStatus;
     streamLog;
     executionPackage;
-    resetState(isInit) {
+    resetState(isInit, agentInfo) {
         if (isInit) {
             this.streamStatus = {
                 streamId: this.streamId,
@@ -20,6 +20,14 @@ class ExecutionStateHelper {
                 runningNodes: [],
                 message: "",
                 startDate: Date.now(),
+                agentInfo: agentInfo && {
+                    bundleVersion: agentInfo.version,
+                    osRelease: agentInfo.os.release,
+                    osVersion: agentInfo.os.version,
+                    cpu: agentInfo.cpu,
+                    cpuArchitecture: agentInfo.cpuArchitecture,
+                    ip: agentInfo.ip,
+                },
             };
         }
         else {
@@ -33,10 +41,10 @@ class ExecutionStateHelper {
             nodeResults: [],
         };
     }
-    init(executionPackage) {
+    init(executionPackage, agentInfo) {
         this.streamId = executionPackage.streamId;
         this.executionPackage = executionPackage;
-        this.resetState(true);
+        this.resetState(true, agentInfo);
         return this;
     }
     getStatusAndLogs() {
@@ -52,6 +60,11 @@ class ExecutionStateHelper {
             this.streamStatus.outcome = statusUpdate.outcome;
         }
         this.streamStatus.endDate = Date.now();
+    }
+    updateState(state) {
+        if (state && this.streamStatus.state !== state) {
+            this.streamStatus.state = state;
+        }
     }
     addRunningNode(node) {
         if (!this.streamStatus.runningNodes) {
