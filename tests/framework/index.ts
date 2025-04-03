@@ -5,6 +5,11 @@ import type { Design } from "./definitions/application/Design";
 import type { StreamNodeOutput } from "./engine/build/models/StreamNode";
 import { EngineManager } from "./helpers/EngineManager";
 
+enum ExecutionResult {
+    SUCCESS = "success",
+    FAIL = "fail",
+}
+
 const execute = async (engineVersion: string, payload: High5ExecutionPayload, design: Design): Promise<StreamNodeOutput[]> => {
     const waveEngine = await new EngineManager(engineVersion).getEngine();
     const executionPackage = {
@@ -35,4 +40,21 @@ const executeChain = async (engineVersions: string[], payload: High5ExecutionPay
     return outputs;
 };
 
-export { execute, executeChain };
+const executeWithAllEngines = async (payload: High5ExecutionPayload, design: Design): Promise<Record<string, ExecutionResult>> => {
+    const engines: string[] = (await new EngineManager().getEnginesList()).map(engine => engine.version);
+    const results: Record<string, ExecutionResult> = {};
+    for await (const engine of engines) {
+        try {
+            await execute(engine, payload, design);
+            results[engine] = ExecutionResult.SUCCESS;
+        } catch (err) {
+            console.error(`An error occurred during execution: ${String(err)}`);
+            results[engine] = ExecutionResult.FAIL;
+        }
+    }
+    return Object.keys(results)
+        .sort()
+        .reduce((acc, key) => ({ ...acc, [key]: results[key] }), {});
+};
+
+export { execute, executeChain, executeWithAllEngines };

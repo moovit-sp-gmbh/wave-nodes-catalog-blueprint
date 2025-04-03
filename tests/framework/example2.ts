@@ -9,7 +9,7 @@ const payload = { type: High5ExecutionPayloadType.JSON, data: "{}" };
 
 initCatalog(catalogPath).then(catalog => {
     const design = {
-        node: catalog.Python,
+        node: catalog.PythonAction,
         uuid: 1,
         inputs: {
             ["Path to the Python interpreter"]: "python3",
@@ -17,25 +17,25 @@ initCatalog(catalogPath).then(catalog => {
             Dependencies: "wonderwords",
         },
         onSuccess: {
-            node: catalog.LowerCase,
+            node: catalog.LowerCaseAction,
             uuid: 2,
             inputs: {
                 String: "{{node.1.output.Stdout}}",
             },
             onSuccess: {
-                node: catalog.Sleep,
+                node: catalog.SleepAction,
                 uuid: 3,
                 inputs: {
                     ["Sleep Duration"]: 5000,
                 },
                 onSuccess: {
-                    node: catalog.UpperCase,
+                    node: catalog.UpperCaseAction,
                     uuid: 4,
                     inputs: {
                         String: "{{node.2.output.String}}",
                     },
                     onSuccess: {
-                        node: catalog.HttpClient,
+                        node: catalog.HttpClientAction,
                         uuid: 5,
                         inputs: {
                             URL: "https://httpbin.org/post",
