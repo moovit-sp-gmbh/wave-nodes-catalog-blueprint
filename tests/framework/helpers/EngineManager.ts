@@ -130,7 +130,7 @@ class EngineManager {
     /**
      * Download the registry of all available Wave Engines.
      */
-    private async getEnginesList(): Promise<WaveEngine[]> {
+    async getEnginesList(): Promise<WaveEngine[]> {
         const engines: WaveEngine[] = [];
         const hcl = new hcloud({ server: "" });
         await loadConfig();
