@@ -3,7 +3,7 @@ import { High5ExecutionPayloadType } from "hcloud-sdk/lib/interfaces/high5/space
 import path from "path";
 import initCatalog from "./helpers/CatalogHelper";
 
-const engineVersions = ["2.0.0-dev-1", "2.0.0-dev-7", "2.0.0-dev-12"];
+const engineVersions = ["2.0.0-dev-12"];
 const catalogPath = path.join("..", "..", "..", "..", "wave-nodes", "build", "catalog", "bundle.js");
 const payload = { type: High5ExecutionPayloadType.JSON, data: "{}" };
 

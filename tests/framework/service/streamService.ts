@@ -3,6 +3,8 @@ import path from "path";
 import type { Design } from "../definitions/application/Design";
 import type { ExtendedHigh5ExecutionPackage } from "../definitions/application/Execution";
 import type { NodeData } from "../definitions/application/StreamNode";
+import { Engine, getAgentInfo, importEngine } from "../definitions/application/Engine";
+import VerifyFileSignature from "../definitions/application/VerifyFileSignature";
 import type { StreamNodeOutput } from "../engine/build/models/StreamNode";
 import { resolveInputs } from "../helpers/InputHelper";
 import { patchEngine } from "./PatchEngine";
@@ -28,19 +30,38 @@ const parsePayload = (executionPackage: High5ExecutionPackage) => {
     return payloadData;
 };
 
+const getEngineInstance = async (executionPackage: ExtendedHigh5ExecutionPackage, pathToEngine: string): Promise<Engine | undefined> => {
+try {
+    const module = await importEngine(pathToEngine);
+    return new module.default(
+        executionPackage,
+        VerifyFileSignature,
+        "",
+        await getAgentInfo(executionPackage)
+    );
+} catch (err: unknown) {
+console.error(`Unable to load Engine file - ${err}`);
+}
+return;
+}
+
 const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, design: Design, pathToEngine: string): Promise<StreamNodeOutput[]> => {
     // parse payload
     executionPackage.payload.data = parsePayload(executionPackage);
 
-    const execution = await import(path.join(pathToEngine, "helpers", "ExecutionStateHelper"));
-    const runner = await import(path.join(pathToEngine, "utils", "StreamRunner"));
-    const wave = await import(path.join(pathToEngine, "helpers", "Wave"));
-    const { StreamResult } = await import(path.join(pathToEngine, "models", "StreamResult"));
+    const engine = await getEngineInstance(executionPackage, pathToEngine);
+    if (!engine) {
+console.error("Can't load the engine!");
+return [];
+}
+    const runEngine = engine.run.bind(engine);
+    runEngine().then(result => console.log("asd", result));
 
-    let duration: number = 0;
+
+    /*let duration: number = 0;
     const nodes: NodeData = {};
-    const streamRunner = new runner.default(executionPackage as ExtendedHigh5ExecutionPackage);
-    const executionStateHelper = new execution.default().init(executionPackage as ExtendedHigh5ExecutionPackage);
+    //const streamRunner = new module.default(executionPackage as ExtendedHigh5ExecutionPackage);
+    //const executionStateHelper = new execution.default().init(executionPackage as ExtendedHigh5ExecutionPackage);
 
     while (design) {
         const start = performance.now();
@@ -56,9 +77,9 @@ const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, de
         if (design?.onSuccess) {
             design = design.onSuccess;
         } else break;
-    }
+    }*/
 
-    return nodes[String(design.uuid)].output;
+    return []; //nodes[String(design.uuid)].output;
 };
 
 export { executeStream };
