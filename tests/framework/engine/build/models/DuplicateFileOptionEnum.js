@@ -8,4 +8,4 @@ var DuplicateFileOption;
     DuplicateFileOption["OVERWRITE"] = "Overwrite";
     DuplicateFileOption["RENAME_EXISTING"] = "Rename Existing";
     DuplicateFileOption["INCREMENT_NAME"] = "Increment Name";
-})(DuplicateFileOption = exports.DuplicateFileOption || (exports.DuplicateFileOption = {}));
+})(DuplicateFileOption || (exports.DuplicateFileOption = DuplicateFileOption = {}));

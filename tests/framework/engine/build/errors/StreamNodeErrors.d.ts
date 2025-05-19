@@ -1,5 +1,4 @@
 import { StreamNodeResultError } from "hcloud-sdk/lib/interfaces/high5/space/event/stream/node";
-
 declare abstract class StreamNodeError extends Error {
     protected code: number;
     protected detail: string;

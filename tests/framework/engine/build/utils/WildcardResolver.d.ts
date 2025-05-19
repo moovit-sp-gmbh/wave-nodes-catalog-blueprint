@@ -1,5 +1,4 @@
 import { StreamResult } from "../models/StreamResult";
-
 export default class WildcardResolver {
     private streamResult;
     private static MAX_WILDCARD_NESTINGS;

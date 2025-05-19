@@ -2,7 +2,6 @@ import { ExtendedHigh5ExecutionPackage, StreamNode } from "hcloud-sdk/lib/interf
 import { StreamNodeAdditionalConnector, StreamNodeInput } from "../models/StreamNode";
 import { StreamResult } from "../models/StreamResult";
 import Node from "../nodes/Node";
-
 export declare const NODE_CATALOG_NAME: unique symbol;
 type NodeConstructor = new (
     executionPackage: ExtendedHigh5ExecutionPackage,

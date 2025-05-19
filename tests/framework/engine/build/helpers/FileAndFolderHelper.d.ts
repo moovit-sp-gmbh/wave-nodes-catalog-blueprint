@@ -1,4 +1,3 @@
-/// <reference types="node" />
 export declare function incrementFileOrFolderName(destPath: string): Promise<string>;
 export declare function _copyFile(
     srcPath: string,

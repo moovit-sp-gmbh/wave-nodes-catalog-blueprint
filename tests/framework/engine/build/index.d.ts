@@ -2,7 +2,6 @@ import { StreamResult } from "hcloud-sdk/lib/interfaces/high5";
 import { ExtendedHigh5ExecutionPackage } from "hcloud-sdk/lib/interfaces/high5/space/execution/index";
 import { ExecutionState } from "./helpers/ExecutionStateHelper";
 import StreamRunner, { AgentInfo } from "./utils/StreamRunner";
-
 /**
  * Engine is the entrypoint for new stream executions
  */

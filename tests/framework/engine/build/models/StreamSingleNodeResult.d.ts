@@ -7,7 +7,6 @@ import {
 import { StreamNode } from "hcloud-sdk/lib/interfaces/high5/space/execution";
 import Node from "../nodes/Node";
 import { StreamNodeResolvedInput } from "./StreamNode";
-
 export declare class StreamSingleNodeResult implements SDKStreamSingleNodeResult {
     uuid: string;
     nodeUuid: string;
@@ -23,6 +22,7 @@ export declare class StreamSingleNodeResult implements SDKStreamSingleNodeResult
     bypassed?: boolean | undefined;
     nodeResults?: StreamSingleNodeResult[] | undefined;
     waiting?: boolean;
+    additionalConnectorRoot?: string;
     streamNode: StreamNode & {
         catalog: {
             name?: string;

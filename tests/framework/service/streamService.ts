@@ -1,20 +1,23 @@
+import { resolveInputs } from "../helpers/InputHelper";
 import { High5ExecutionPackage, High5ExecutionPayloadType } from "hcloud-sdk/lib/interfaces/high5/space/execution";
-import path from "path";
 import type { Design } from "../definitions/application/Design";
 import type { ExtendedHigh5ExecutionPackage } from "../definitions/application/Execution";
 import type { NodeData } from "../definitions/application/StreamNode";
+import { Engine, getAgentInfo, importEngine } from "../definitions/application/Engine";
+import VerifyFileSignature from "../definitions/application/VerifyFileSignature";
 import type { StreamNodeOutput } from "../engine/build/models/StreamNode";
-import { resolveInputs } from "../helpers/InputHelper";
 import { patchEngine } from "./PatchEngine";
-
-const DURATION_OUTPUT_NAME = "Run time";
+import { getWaveNodeFolder, getWaveEngineFolder } from "../utils/folders";
 
 const parsePayload = (executionPackage: High5ExecutionPackage) => {
     let payloadData = undefined;
     switch (executionPackage.payload.type) {
         case High5ExecutionPayloadType.JSON:
             try {
-                payloadData = typeof executionPackage.payload.data !== "object" ? JSON.parse(executionPackage.payload.data) : executionPackage.payload.data;
+                payloadData =
+                    typeof executionPackage.payload.data !== "object"
+                        ? JSON.parse(executionPackage.payload.data)
+                        : executionPackage.payload.data;
             } catch (error: unknown) {
                 console.error(`Unable to parse payload to json - ${error}`);
                 return null;
@@ -28,37 +31,61 @@ const parsePayload = (executionPackage: High5ExecutionPackage) => {
     return payloadData;
 };
 
-const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, design: Design, pathToEngine: string): Promise<StreamNodeOutput[]> => {
+const getEngineInstance = async (executionPackage: ExtendedHigh5ExecutionPackage): Promise<Engine | undefined> => {
+    const folder = getWaveEngineFolder();
+    if (!folder) return;
+    try {
+        const module = await importEngine(folder);
+        return new module.default(executionPackage, VerifyFileSignature, "", getAgentInfo());
+    } catch (err: unknown) {
+        console.error(`Unable to load Engine file - ${err}`);
+    }
+    return;
+};
+
+const runEngine = async (executionPackage: ExtendedHigh5ExecutionPackage) => {
+    const engine = await getEngineInstance(executionPackage);
+    if (!engine) {
+        throw new Error("Can't load the engine!");
+        return [];
+    }
+    const nodeCatalogs = getWaveNodeFolder();
+    const run = nodeCatalogs.length ? engine.runDev.bind(engine, ...nodeCatalogs) : engine.run.bind(engine);
+    return await run();
+};
+
+const executeStream = async (executionPackage: ExtendedHigh5ExecutionPackage, design: Design): Promise<StreamNodeOutput[]> => {
     // parse payload
     executionPackage.payload.data = parsePayload(executionPackage);
 
-    const execution = await import(path.join(pathToEngine, "helpers", "ExecutionStateHelper"));
-    const runner = await import(path.join(pathToEngine, "utils", "StreamRunner"));
-    const wave = await import(path.join(pathToEngine, "helpers", "Wave"));
-    const { StreamResult } = await import(path.join(pathToEngine, "models", "StreamResult"));
-
-    let duration: number = 0;
     const nodes: NodeData = {};
-    const streamRunner = new runner.default(executionPackage as ExtendedHigh5ExecutionPackage);
-    const executionStateHelper = new execution.default().init(executionPackage as ExtendedHigh5ExecutionPackage);
-
+    let duration = 0;
     while (design) {
-        const start = performance.now();
-        console.info("• Execute node:", design.node.name);
-        const node = new design.node(executionPackage, StreamResult.create({}), resolveInputs(design.inputs, nodes));
-        node.setExecutionStateHelper(executionStateHelper);
-        const w = patchEngine(new wave.default(node, streamRunner), executionPackage.waveEngine.version);
-        node.setWave(w);
-        await node.run();
-        nodes[String(design.uuid)] = { input: node.getInputs() || [], output: node.getOutputs() || [] };
-        duration += nodes[String(design.uuid)].output.filter(out => out.name === DURATION_OUTPUT_NAME)[0]?.value || performance.now() - start;
-        node.setOutput(DURATION_OUTPUT_NAME, duration);
-        if (design?.onSuccess) {
+        console.info("• Execute node:", design.node);
+        executionPackage.design = {
+            nodes: [
+                {
+                    uuid: String(design.uuid),
+                    name: design.node,
+                    catalog: { _id: "1", version: "0.0.1", url: "https://helmut.cloud/", changeLog: [] },
+                    path: `name://${design.node}`,
+                    inputs: resolveInputs(design.inputs, nodes),
+                },
+            ],
+            startNode: String(design.uuid),
+        };
+        const result = await runEngine(executionPackage);
+        if (result.nodeResults[0].failed) console.info(result.nodeResults[0].error);
+
+        nodes[String(design.uuid)] = { input: result.nodeResults[0].inputs || [], output: result.nodeResults[0].outputs || [] };
+        duration += result.nodeResults[0].duration;
+        if (design.onSuccess) {
             design = design.onSuccess;
         } else break;
     }
 
-    return nodes[String(design.uuid)].output;
+    const outputs = [...nodes[String(design.uuid)].output, { name: "Run time", value: duration } as StreamNodeOutput];
+    return outputs;
 };
 
 export { executeStream };

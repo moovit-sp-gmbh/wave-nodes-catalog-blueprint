@@ -16,6 +16,7 @@ class StreamSingleNodeResult {
     bypassed;
     nodeResults;
     waiting;
+    additionalConnectorRoot;
     streamNode;
     executableNode;
     get info() {
@@ -46,6 +47,7 @@ class StreamSingleNodeResult {
             nodeResults: this.nodeResults,
             info: this.info,
             waiting: this.waiting,
+            additionalConnectorRoot: this.additionalConnectorRoot,
         };
     }
 }

@@ -1,6 +1,5 @@
 import { IssuedDebugCommand } from "hcloud-sdk/lib/interfaces/high5";
 import { StreamNode } from "hcloud-sdk/lib/interfaces/high5/space/execution";
-
 export default class DebugClient {
     res: (c: IssuedDebugCommand) => void;
     rej: (e: Error) => void;
@@ -12,4 +11,5 @@ export default class DebugClient {
     setValue(uuid: string, key: string, value: unknown): void;
     replaceNode(node: StreamNode): void;
     restart(): void;
+    cancel(): void;
 }

@@ -5,7 +5,6 @@ import { StreamResult } from "../models/StreamResult";
 import { StreamSingleNodeResult } from "../models/StreamSingleNodeResult";
 import Node from "../nodes/Node";
 import StreamRunner from "./StreamRunner";
-
 /**
  * NodeExecutor will execute a single node (by uuid) and return the result (promise)
  */
@@ -29,7 +28,7 @@ export default class NodeExecutor {
         dry: boolean,
         executionStateHelper: ExecutionStateHelper,
         runner: StreamRunner,
-        isAdditionalConnector?: boolean,
+        additionalConnectorRoot?: string,
         catalogPath?: string,
         extraCatalogLocations?: string[]
     ): Promise<StreamNodeExecutionResult>;
