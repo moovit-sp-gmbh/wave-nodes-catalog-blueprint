@@ -1,3 +1,4 @@
+import { setWaveEngineFolder } from "../utils/folders";
 import crypto from "crypto";
 import { existsSync, mkdirSync } from "fs";
 import fs, { rm } from "fs/promises";
@@ -30,7 +31,8 @@ class EngineManager {
         } catch (error) {
             console.error(`Can not create engines folder: '${String(error)}`);
             const stat = await fs.stat(this.baseEngineFolder);
-            if (!stat.isDirectory()) throw new Error(`Unable to create engine folder. A file already exists with the same path. ${this.baseEngineFolder}`);
+            if (!stat.isDirectory())
+                throw new Error(`Unable to create engine folder. A file already exists with the same path. ${this.baseEngineFolder}`);
         }
     }
 
@@ -108,7 +110,9 @@ class EngineManager {
         if (!existsSync(metadataFile)) return undefined;
         const content = load(await fs.readFile(metadataFile, "utf8")) as Record<string, WaveEngine>;
         if (this.version && content && this.version in content) {
-            return existsSync(path.join(this.baseEngineFolder, this.folderName, content[this.version].md5, "build", "index.js")) ? content[this.version] : undefined;
+            return existsSync(path.join(this.baseEngineFolder, this.folderName, content[this.version].md5, "build", "index.js"))
+                ? content[this.version]
+                : undefined;
         }
         return undefined;
     }
@@ -159,10 +163,13 @@ class EngineManager {
      * if the version is not specified - get the latest stable version.
      * @returns Path to downloaded engine
      */
-    async getEngine(): Promise<WaveEngine & { path: string }> {
+    async getEngine(): Promise<WaveEngine> {
         let engine: WaveEngine | undefined;
         engine = await this.loadMetadata();
-        if (engine) return { ...engine, path: path.join(this.baseEngineFolder, this.folderName, engine.md5, "build") };
+        if (engine) {
+            setWaveEngineFolder(path.resolve(path.join(this.baseEngineFolder, this.folderName, engine.md5, "build", "index.js")));
+            return engine;
+        }
 
         let engines: WaveEngine[] = await this.getEnginesList();
         if (!engines.length) throw new Error("There are no available Wave Engines");
@@ -172,11 +179,11 @@ class EngineManager {
             engines = engines.filter((engine: WaveEngine) => !engine.dev);
             engine = engines[engines.length - 1];
         } else {
-            engine = engines.find(e => e.version === this.version);
+            engine = engines.find((e) => e.version === this.version);
             if (!engine)
                 throw new Error(
                     `Wave Engine version ${this.version} does not exist, please try one of the following values: ${engines
-                        .map(e => e.version)
+                        .map((e) => e.version)
                         .sort()
                         .join(", ")}`
                 );
@@ -184,8 +191,8 @@ class EngineManager {
 
         await this.prepareEngine(engine);
         await this.updateMetadata(engine);
-
-        return { ...engine, path: path.join(this.baseEngineFolder, this.folderName, engine.md5, "build") };
+        setWaveEngineFolder(path.resolve(path.join(this.baseEngineFolder, this.folderName, engine.md5, "build", "index.js")));
+        return engine;
     }
 }
 

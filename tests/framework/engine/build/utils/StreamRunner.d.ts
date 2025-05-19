@@ -1,10 +1,10 @@
 import { StreamResult as SDKStreamResult } from "hcloud-sdk/lib/interfaces/high5";
 import { ExtendedHigh5ExecutionPackage, StreamNode } from "hcloud-sdk/lib/interfaces/high5/space/execution";
+import os from "os";
 import DebugClient from "../debug/client";
 import ExecutionStateHelper from "../helpers/ExecutionStateHelper";
 import { StreamResult } from "../models/StreamResult";
 import { StreamSingleNodeResult } from "../models/StreamSingleNodeResult";
-
 declare class StreamRunner {
     static DEBUG_TIMEOUT: number;
     agentInfo: AgentInfo;
@@ -27,12 +27,13 @@ declare class StreamRunner {
     constructor(executionPackage: ExtendedHigh5ExecutionPackage, streamResult?: StreamResult, catalogPath?: string, agentInfo?: AgentInfo);
     /**
      * run starts the stream execution beginning with the first node (startNode)
+     * @param additionalConnectorRoot - if node to be executed is triggered by additional connector, this will be the nodeUuid of root node
      */
     process(
         dry: boolean,
         executionStateHelper: ExecutionStateHelper,
         nextNodeUUID?: string,
-        isAdditionalConnector?: boolean,
+        additionalConnectorRoot?: string,
         extraCatalogLocations?: string[]
     ): Promise<SDKStreamResult>;
     processDebug(dry: boolean, startNode?: StreamNode): Promise<SDKStreamResult>;
@@ -63,10 +64,7 @@ export type AgentInfo = {
         used: number;
     };
     connectionUptime: number;
-    nics: {
-        ip: string;
-        mac: string;
-    }[];
+    nics: Record<string, (os.NetworkInterfaceInfoIPv4 | os.NetworkInterfaceInfoIPv6)[]>;
     installerVersion?: string;
     ip?: string;
     version?: string;

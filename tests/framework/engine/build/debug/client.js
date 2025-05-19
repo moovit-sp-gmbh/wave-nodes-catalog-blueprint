@@ -1,6 +1,12 @@
 "use strict";
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod };
+    };
 Object.defineProperty(exports, "__esModule", { value: true });
 const high5_1 = require("hcloud-sdk/lib/interfaces/high5");
+const StreamCancelledError_1 = __importDefault(require("../errors/StreamCancelledError"));
 class DebugClient {
     res;
     rej;
@@ -58,6 +64,9 @@ class DebugClient {
         this.res({
             type: high5_1.CommandType.RESTART,
         });
+    }
+    cancel() {
+        this.rej(new StreamCancelledError_1.default());
     }
 }
 exports.default = DebugClient;

@@ -1,14 +1,16 @@
-/// <reference types="node" />
 import { AxiosRequestConfig } from "axios";
 import HCloud from "hcloud-sdk";
 import { StreamResult } from "hcloud-sdk/lib/interfaces/high5";
-import { StreamNodeSpecification, StreamNodeSpecificationInput, StreamNodeSpecificationOutputType } from "hcloud-sdk/lib/interfaces/high5/wave";
+import {
+    StreamNodeSpecification,
+    StreamNodeSpecificationInput,
+    StreamNodeSpecificationOutputType,
+} from "hcloud-sdk/lib/interfaces/high5/wave";
 import { DuplicateFileOption } from "../models/DuplicateFileOptionEnum";
 import { DuplicateFolderOption } from "../models/DuplicateFolderOptionEnum";
 import { StreamNodeOutput, StreamNodeResolvedInput } from "../models/StreamNode";
 import Node from "../nodes/Node";
 import StreamRunner from "../utils/StreamRunner";
-
 /**
  * The Wave class provides access to the nodes internal methods and properties in a user friendly way.
  */
@@ -213,17 +215,18 @@ type FileFolderReturnObject = {
  */
 declare class FileAndFolderHelper {
     node: Node;
+    private logger;
     constructor(node: Node);
     /**
      * Creates an empty file.
-     * @param filePath File path WITH file extension
+     * @param filePath File path with file extension. If path contains folders that do not exist yet, they will be created.
      * @param duplicateFileOption Option defining how to handle an already existing file with the same name
      * @returns final path of the created file. If the file already exists and duplicateFileOption = SKIP, the already existing file path will be returned.
      */
     createFile(filePath: string, duplicateFileOption: DuplicateFileOption): Promise<string>;
     /**
      * Creates a folder.
-     * @param folderPath Folder path
+     * @param folderPath Folder path. If path contains parent folders that do not exist yet, they will be created as well.
      * @param duplicateFolderOption Option defining how to handle an already existing folder with the same name
      * @returns final path of the created folder. If the folder already exists and duplicateFolderOption = SKIP, the already existing folder path will be returned.
      */
@@ -231,75 +234,75 @@ declare class FileAndFolderHelper {
     /**
      * Copies a file to the specified location.
      * @param srcFilePath Source file path with file extension
-     * @param destFilePath Destination file path with file extension
+     * @param destFilePath Destination file path with file extension. If path contains folders that do not exist yet, they will be created.
      * @param duplicateFileOption Option defining how to handle an already existing file with the same name
      * @param progressCallback (Optional) callback function that will be called whenever the progress increases by 1%, but limited to max 1/s. Can be used to trigger an additional connector.
      * @param getSrcChecksum (Optional) Calculate the MD5 checksum of the source file while copying (this is more efficient than creating the md5 separately).
      * @param abortSignal (Optional) When provided, the method will listen to the "abort" event of the signal and - once triggered - abort the file operation with an error (without any cleanup).
-     * @returns The final file path as a string, or - if getSrcChecksum is true - an object containing the final file path and the MD5 checksum of the source file.
+     * @returns An object containing the final file path and the MD5 checksum of the source file or, if getSrcChecksum is undefined, just the final file path as a string.
      */
-    copyFile(
+    copyFile<T extends boolean | undefined = undefined>(
         srcFilePath: string,
         destFilePath: string,
         duplicateFileOption: DuplicateFileOption,
         progressCallback?: (percent: number) => void,
-        getSrcChecksum?: boolean,
+        getSrcChecksum?: T,
         abortSignal?: AbortSignal
-    ): Promise<string | FileFolderReturnObject>;
+    ): Promise<T extends undefined ? string : FileFolderReturnObject>;
     /**
      * Copies a folder to the specified location.
      * @param srcFolderPath Source folder path
-     * @param destFolderPath Destination folder path (full path, not parent folder path)
+     * @param destFolderPath Destination folder path (full path, not parent folder path). If path contains folders that do not exist yet, they will be created.
      * @param duplicateFolderOption Option defining how to handle an already existing folder with the same name
      * @param progressCallback (Optional) callback function that will be called whenever there is measurable progress, but limited to max 1/s. Can be used to trigger an additional connector.
      * @param getSrcChecksum (Optional) Calculate the MD5 checksum of the source folder while copying (this is more efficient than creating the md5 separately).
      * @param abortSignal (Optional) When provided, the method will listen to the "abort" event of the signal and - once triggered - abort the file operation with an error (without any cleanup).
-     * @returns The final folder path as a string, or - if getSrcChecksum is true - an object containing the final folder path and the MD5 checksum of the source folder.
+     * @returns An object containing the final folder path and the MD5 checksum of the source folder or, if getSrcChecksum is undefined, just the final folder path as a string.
      */
-    copyFolder(
+    copyFolder<T extends boolean | undefined = undefined>(
         srcFolderPath: string,
         destFolderPath: string,
         duplicateFolderOption: DuplicateFolderOption,
         progressCallback?: (percent: number) => void,
-        getSrcChecksum?: boolean,
+        getSrcChecksum?: T,
         abortSignal?: AbortSignal
-    ): Promise<string | FileFolderReturnObject>;
+    ): Promise<T extends undefined ? string : FileFolderReturnObject>;
     /**
      * Moves a file to the specified location.
      * @param srcFilePath Source file path with file extension
-     * @param destFilePath Destination file path with file extension
+     * @param destFilePath Destination file path with file extension. If path contains folders that do not exist yet, they will be created.
      * @param duplicateFileOption Option defining how to handle an already existing file with the same name
      * @param progressCallback (Optional) callback function that will be called whenever the progress increases by 1%, but limited to max 1/s. Can be used to trigger an additional connector.
      * @param getSrcChecksum (Optional) Calculate the MD5 checksum of the source file while copying (this is more efficient than creating the md5 separately).
      * @param abortSignal (Optional) When provided, the method will listen to the "abort" event of the signal and - once triggered - abort the folder operation with an error (without any cleanup).
-     * @returns The final file path as a string, or - if getSrcChecksum is true - an object containing the final file path and the MD5 checksum of the source file.
+     * @returns An object containing the final file path and the MD5 checksum of the source file or, if getSrcChecksum is undefined, just the final file path as a string.
      */
-    moveFile(
+    moveFile<T extends boolean | undefined = undefined>(
         srcFilePath: string,
         destFilePath: string,
         duplicateFileOption: DuplicateFileOption,
         progressCallback?: (percent: number) => void,
-        getSrcChecksum?: boolean,
+        getSrcChecksum?: T,
         abortSignal?: AbortSignal
-    ): Promise<string | FileFolderReturnObject>;
+    ): Promise<T extends undefined ? string : FileFolderReturnObject>;
     /**
      * Moves a folder to the specified location.
      * @param srcFolderPath Source folder path
-     * @param destFolderPath Destination folder path
+     * @param destFolderPath Destination folder path. If path contains parent folders that do not exist yet, they will be created.
      * @param duplicateFolderOption Option defining how to handle an already existing folder with the same name
      * @param progressCallback (Optional) callback function that will be called whenever there is measurable progress, but limited to max 1/s. Can be used to trigger an additional connector.
      * @param getSrcChecksum (Optional) Calculate the MD5 checksum of the source folder while copying (this is more efficient than creating the md5 separately)
      * @param abortSignal (Optional) When provided, the method will listen to the "abort" event of the signal and - once triggered - abort the folder operation with an error (without any cleanup).
-     * @returns The final folder path as a string, or - if getSrcChecksum is true - an object containing the final folder path and the MD5 checksum of the source folder.
+     * @returns An object containing the final folder path and the MD5 checksum of the source folder or, if getSrcChecksum is undefined, just the final folder path as a string.
      */
-    moveFolder(
+    moveFolder<T extends boolean | undefined = undefined>(
         srcFolderPath: string,
         destFolderPath: string,
         duplicateFolderOption: DuplicateFolderOption,
         progressCallback?: (percent: number) => void,
-        getSrcChecksum?: boolean,
+        getSrcChecksum?: T,
         abortSignal?: AbortSignal
-    ): Promise<string | FileFolderReturnObject>;
+    ): Promise<T extends undefined ? string : FileFolderReturnObject>;
     /**
      * Renames a file.
      * @param filePath File path with file extension

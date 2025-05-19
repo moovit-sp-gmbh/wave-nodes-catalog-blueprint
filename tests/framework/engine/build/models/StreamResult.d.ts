@@ -1,7 +1,6 @@
 import { StreamResult as SDKStreamResult } from "hcloud-sdk/lib/interfaces/high5";
 import StreamRunner from "../utils/StreamRunner";
 import { StreamSingleNodeResult } from "./StreamSingleNodeResult";
-
 export declare class StreamResult implements SDKStreamResult {
     payload: any;
     uuid: string;

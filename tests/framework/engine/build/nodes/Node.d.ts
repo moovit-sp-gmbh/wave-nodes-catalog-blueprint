@@ -7,7 +7,6 @@ import { StreamNodeAdditionalConnector, StreamNodeInput, StreamNodeOutput, Strea
 import { StreamResult } from "../models/StreamResult";
 import StreamRunner from "../utils/StreamRunner";
 import WildcardResolver from "../utils/WildcardResolver";
-
 /**
  * The abstract representation of a node that can be executed
  */
@@ -80,7 +79,7 @@ export default abstract class Node {
     /**
      * throws for invalid missing input
      */
-    private throwForMissingInputs;
+    private throwForMissingInputValue;
     /**
      * Resolves all inputs through the WildcardReplacer and writes result to .value
      */

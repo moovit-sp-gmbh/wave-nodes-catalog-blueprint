@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractFromJSON = void 0;
+exports.extractFromJSON = extractFromJSON;
 function extractFromJSON(jsonData, jsonPath) {
     if (jsonPath.length === 0) {
         return jsonData;
@@ -10,12 +10,10 @@ function extractFromJSON(jsonData, jsonPath) {
             return extractProp(JSON.parse(jsonData), jsonPath);
         }
         return extractProp(jsonData, jsonPath);
-    }
-    catch (error) {
+    } catch {
         return null;
     }
 }
-exports.extractFromJSON = extractFromJSON;
 function extractProp(o, path) {
     let curr = o;
     for (let i = 0; i < path.length && curr !== undefined && curr !== null; i++) {

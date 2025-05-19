@@ -7,4 +7,4 @@ var DuplicateFolderOption;
     DuplicateFolderOption["SKIP"] = "Skip";
     DuplicateFolderOption["RENAME_EXISTING"] = "Rename Existing";
     DuplicateFolderOption["INCREMENT_NAME"] = "Increment Name";
-})(DuplicateFolderOption = exports.DuplicateFolderOption || (exports.DuplicateFolderOption = {}));
+})(DuplicateFolderOption || (exports.DuplicateFolderOption = DuplicateFolderOption = {}));

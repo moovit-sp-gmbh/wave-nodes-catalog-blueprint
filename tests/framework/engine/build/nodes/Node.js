@@ -1,7 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod };
+    };
 Object.defineProperty(exports, "__esModule", { value: true });
 const wave_1 = require("hcloud-sdk/lib/interfaces/high5/wave");
 const StreamNodeErrors_1 = require("../errors/StreamNodeErrors");
@@ -44,8 +46,7 @@ class Node {
         this.validateInputTypes();
         try {
             await this.execute();
-        }
-        catch (err) {
+        } catch (err) {
             if (!(err instanceof StreamNodeErrors_1.StreamNodeError)) {
                 throw new StreamNodeErrors_1.StreamNodeGenericError(err);
             }
@@ -53,18 +54,21 @@ class Node {
         }
     }
     async cleanup() {
-        await this.onCleanup?.().catch(err => {
+        await this.onCleanup?.().catch((err) => {
             this.wave.logger.updateMessage(`Failed to cleanup. Cause: ${String(err)}`);
         });
     }
     prepareOutputs() {
         const spec = this.getNodeSpecification();
-        if ((0, wave_1.isStreamNodeSpecificationV1)(spec) || (0, wave_1.isStreamNodeSpecificationV2)(spec) || (0, wave_1.isStreamNodeSpecificationV3)(spec)) {
+        if (
+            (0, wave_1.isStreamNodeSpecificationV1)(spec) ||
+            (0, wave_1.isStreamNodeSpecificationV2)(spec) ||
+            (0, wave_1.isStreamNodeSpecificationV3)(spec)
+        ) {
             spec.outputs?.forEach((o) => {
                 this.outputs.push({ name: o.name, value: undefined, type: o.type });
             });
-        }
-        else {
+        } else {
             throw new UnknownStreamNodeSpecificationVersion_1.default(spec.specVersion);
         }
     }
@@ -73,18 +77,20 @@ class Node {
             if (!i.originalValue) {
                 if (typeof i.value === "object") {
                     i.originalValue = JSON.parse(JSON.stringify(i.value));
-                }
-                else {
+                } else {
                     i.originalValue = i.value;
                 }
             }
             const spec = this.getNodeSpecification();
-            if ((0, wave_1.isStreamNodeSpecificationV1)(spec) || (0, wave_1.isStreamNodeSpecificationV2)(spec) || (0, wave_1.isStreamNodeSpecificationV3)(spec)) {
-                const type = spec.inputs?.find((input) => input.name === i.name)?.type;
+            if (
+                (0, wave_1.isStreamNodeSpecificationV1)(spec) ||
+                (0, wave_1.isStreamNodeSpecificationV2)(spec) ||
+                (0, wave_1.isStreamNodeSpecificationV3)(spec)
+            ) {
+                const type = spec.inputs?.find((input) => input.name.toLowerCase() === i.name.toLowerCase())?.type;
                 if (type) {
                     i.type = type;
-                }
-                else {
+                } else {
                     i.type = wave_1.StreamNodeSpecificationInputType.ANY;
                 }
             }
@@ -92,19 +98,24 @@ class Node {
     }
     validateInputMandatories() {
         const spec = this.getNodeSpecification();
-        if ((0, wave_1.isStreamNodeSpecificationV1)(spec) || (0, wave_1.isStreamNodeSpecificationV2)(spec) || (0, wave_1.isStreamNodeSpecificationV3)(spec)) {
+        if (
+            (0, wave_1.isStreamNodeSpecificationV1)(spec) ||
+            (0, wave_1.isStreamNodeSpecificationV2)(spec) ||
+            (0, wave_1.isStreamNodeSpecificationV3)(spec)
+        ) {
             spec.inputs?.forEach((i) => {
-                const input = this.inputs?.find((input) => input.name === i.name);
-                this.throwForMissingInputs(input, i);
+                const input = this.inputs?.find((input) => input.name.toLowerCase() === i.name.toLowerCase());
+                this.throwForMissingInputValue(input, i);
             });
-        }
-        else {
+        } else {
             throw new UnknownStreamNodeSpecificationVersion_1.default(spec.specVersion);
         }
     }
-    throwForMissingInputs(input, i) {
-        if (i.mandatory && !input?.value) {
-            throw new StreamNodeErrors_1.StreamNodeInputMissingError(i.name);
+    throwForMissingInputValue(input, i) {
+        if ("mandatory" in i && i.mandatory) {
+            if (!input || !("value" in input) || input.value === undefined || input.value === null || input.value === "") {
+                throw new StreamNodeErrors_1.StreamNodeInputMissingError(i.name);
+            }
         }
     }
     resolveInputs() {
@@ -112,24 +123,20 @@ class Node {
             if (typeof input.originalValue === "string") {
                 try {
                     input.value = this.wildcardResolver.resolve(input.originalValue);
-                }
-                catch (err) {
+                } catch (err) {
                     input.error = true;
                     input.errorMessage = err.message;
                 }
-            }
-            else if (typeof input.originalValue === "object" && Array.isArray(input.originalValue)) {
+            } else if (typeof input.originalValue === "object" && Array.isArray(input.originalValue)) {
                 input.originalValue.forEach((i, index) => {
                     if (typeof i === "string") {
                         try {
                             input.value[index] = this.wildcardResolver.resolve(i);
-                        }
-                        catch (err) {
+                        } catch (err) {
                             input.error = true;
                             input.errorMessage = err.message;
                         }
-                    }
-                    else if (typeof i === "object") {
+                    } else if (typeof i === "object") {
                         const mapIndex = input.value.findIndex((o) => o.key === i.key);
                         if (mapIndex > -1) {
                             input.value[mapIndex].value = this.wildcardResolver.resolve(i.value);
@@ -137,18 +144,21 @@ class Node {
                         }
                     }
                 });
-            }
-            else if (typeof input.originalValue === "object") {
+            } else if (typeof input.originalValue === "object") {
                 input.value = this.wildcardResolver.resolve(input.originalValue.value);
             }
         });
     }
     validateInputTypes() {
         const spec = this.getNodeSpecification();
-        if ((0, wave_1.isStreamNodeSpecificationV1)(spec) || (0, wave_1.isStreamNodeSpecificationV2)(spec) || (0, wave_1.isStreamNodeSpecificationV3)(spec)) {
+        if (
+            (0, wave_1.isStreamNodeSpecificationV1)(spec) ||
+            (0, wave_1.isStreamNodeSpecificationV2)(spec) ||
+            (0, wave_1.isStreamNodeSpecificationV3)(spec)
+        ) {
             spec.inputs?.forEach((i) => {
-                const input = this.inputs?.find((input) => input.name === i.name);
-                if (!i.mandatory && input?.value === undefined) {
+                const input = this.inputs?.find((input) => input.name.toLowerCase() === i.name.toLowerCase());
+                if ((!("mandatory" in i) || !i.mandatory) && input?.value === undefined) {
                     return;
                 }
                 if (input) {
@@ -170,8 +180,7 @@ class Node {
                                 const n = Number(input.value);
                                 if (!isNaN(n)) {
                                     input.value = n;
-                                }
-                                else {
+                                } else {
                                     throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "number", typeof input.value);
                                 }
                             }
@@ -180,11 +189,9 @@ class Node {
                             if (typeof input.value !== "boolean") {
                                 if (input.value === "true") {
                                     input.value = true;
-                                }
-                                else if (input.value === "false") {
+                                } else if (input.value === "false") {
                                     input.value = false;
-                                }
-                                else {
+                                } else {
                                     throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "boolean", typeof input.value);
                                 }
                             }
@@ -192,22 +199,27 @@ class Node {
                         case wave_1.StreamNodeSpecificationInputType.STRING_MAP:
                             if (typeof input.value !== "object") {
                                 throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "Record<string, string>", typeof input.value);
-                            }
-                            else {
+                            } else {
                                 if (Array.isArray(input.value)) {
-                                    if (input.value.every(o => typeof o.key === "string" && typeof o.value === "string")) {
+                                    if (input.value.every((o) => typeof o.key === "string" && typeof o.value === "string")) {
                                         input.value = input.value.reduce((acc, o) => {
                                             acc[o.key] = o.value;
                                             return acc;
                                         }, {});
+                                    } else {
+                                        throw new StreamNodeErrors_1.StreamNodeInputTypeError(
+                                            i.name,
+                                            "Record<string, string>",
+                                            typeof input.value
+                                        );
                                     }
-                                    else {
-                                        throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "Record<string, string>", typeof input.value);
-                                    }
-                                }
-                                else {
-                                    if (Object.values(input.value).some(v => typeof v !== "string")) {
-                                        throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "Record<string, string>", typeof input.value);
+                                } else {
+                                    if (Object.values(input.value).some((v) => typeof v !== "string")) {
+                                        throw new StreamNodeErrors_1.StreamNodeInputTypeError(
+                                            i.name,
+                                            "Record<string, string>",
+                                            typeof input.value
+                                        );
                                     }
                                 }
                             }
@@ -215,8 +227,7 @@ class Node {
                         case wave_1.StreamNodeSpecificationInputType.STRING_LIST:
                             if (typeof input.value !== "object" || !Array.isArray(input.value)) {
                                 throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "string[]", typeof input.value);
-                            }
-                            else {
+                            } else {
                                 const invalidEntry = input.value.find((i) => typeof i !== "string");
                                 if (invalidEntry) {
                                     throw new StreamNodeErrors_1.StreamNodeInputTypeError(i.name, "string[]", typeof invalidEntry);
@@ -230,8 +241,7 @@ class Node {
                     }
                 }
             });
-        }
-        else {
+        } else {
             throw new UnknownStreamNodeSpecificationVersion_1.default(spec.specVersion);
         }
     }
@@ -258,8 +268,7 @@ class Node {
         }
         if (type) {
             this.outputs.push({ name, value, type });
-        }
-        else {
+        } else {
             this.outputs.push({ name, value });
         }
         return false;
@@ -269,8 +278,7 @@ class Node {
         const output = this.outputs.find((output) => output.name?.toUpperCase() === name.toUpperCase());
         if (!output) {
             this.addOutput(name, value, type);
-        }
-        else {
+        } else {
             output.value = value;
             if (type) {
                 output.type = type;

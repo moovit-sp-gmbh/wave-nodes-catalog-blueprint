@@ -1,7 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod };
+    };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = void 0;
 const crypto_1 = require("crypto");
@@ -9,6 +11,7 @@ const high5_1 = require("hcloud-sdk/lib/interfaces/high5");
 const execution_1 = require("hcloud-sdk/lib/interfaces/high5/space/execution");
 const os_1 = __importDefault(require("os"));
 const client_1 = __importDefault(require("../debug/client"));
+const StreamCancelledError_1 = __importDefault(require("../errors/StreamCancelledError"));
 const MacOSMemory_1 = require("../helpers/osHelper/MacOSMemory");
 const MacOSVersion_1 = require("../helpers/osHelper/MacOSVersion");
 const WindowsVersion_1 = require("../helpers/osHelper/WindowsVersion");
@@ -34,20 +37,20 @@ class StreamRunner {
         this.setAgentInfo(agentInfo);
         this.streamResult =
             streamResult ??
-                StreamResult_1.StreamResult.create({
-                    payload: this.executionPackage.payload,
-                    uuid: (0, crypto_1.randomUUID)(),
-                    failed: false,
-                    nodeResults: [],
-                    startTimestamp: Date.now(),
-                    runner: this,
-                });
+            StreamResult_1.StreamResult.create({
+                payload: this.executionPackage.payload,
+                uuid: (0, crypto_1.randomUUID)(),
+                failed: false,
+                nodeResults: [],
+                startTimestamp: Date.now(),
+                runner: this,
+            });
         if (executionPackage.debug) {
             this.debug = DebugState.CONTINUE;
             this.debugClient = new client_1.default();
         }
     }
-    async process(dry, executionStateHelper, nextNodeUUID, isAdditionalConnector, extraCatalogLocations) {
+    async process(dry, executionStateHelper, nextNodeUUID, additionalConnectorRoot, extraCatalogLocations) {
         this.streamResult.dry = dry;
         this.streamResult.startTimestamp = Date.now();
         this.executionStateHelper = executionStateHelper;
@@ -61,14 +64,20 @@ class StreamRunner {
         const cleanupFns = [];
         while (nextNodeUUID !== undefined && this.executionStateHelper.getOutcome() !== execution_1.High5ExecutionOutcome.CANCELED) {
             await this.setMacOSUsedMem();
-            const nodeExecutionResult = await new NodeExecutor_1.default(nextNodeUUID, this.executionPackage, this.streamResult).process(dry, this.executionStateHelper, this, isAdditionalConnector, this.catalogPath, this.extraCatalogLocations);
+            const nodeExecutionResult = await new NodeExecutor_1.default(nextNodeUUID, this.executionPackage, this.streamResult).process(
+                dry,
+                this.executionStateHelper,
+                this,
+                additionalConnectorRoot,
+                this.catalogPath,
+                this.extraCatalogLocations
+            );
             executionStateHelper.updateNodeResult(nodeExecutionResult.nodeResult);
             nextNodeUUID = undefined;
             if (nodeExecutionResult.node) {
                 if (nodeExecutionResult.nodeResult.failed) {
                     nextNodeUUID = nodeExecutionResult.node.onFail;
-                }
-                else {
+                } else {
                     nextNodeUUID = nodeExecutionResult.node.onSuccess;
                 }
             }
@@ -79,7 +88,8 @@ class StreamRunner {
         for (let i = cleanupFns.length - 1; i >= 0; i--) {
             await cleanupFns[i]();
         }
-        this.streamResult.failed = (this.streamResult.nodeResults?.[this.streamResult.nodeResults.length - 1]?.failed && !isAdditionalConnector) ?? false;
+        this.streamResult.failed =
+            (this.streamResult.nodeResults?.[this.streamResult.nodeResults.length - 1]?.failed && !additionalConnectorRoot) ?? false;
         this.streamResult.endTimestamp = Date.now();
         if (this.streamResult.failed) {
             executionStateHelper.updateStateAndOutcome({
@@ -91,10 +101,16 @@ class StreamRunner {
     }
     async processDebug(dry, startNode) {
         if (!startNode) {
-            startNode = this.executionPackage.design.nodes.find(n => n.uuid === this.executionPackage.design.startNode);
+            startNode = this.executionPackage.design.nodes.find((n) => n.uuid === this.executionPackage.design.startNode);
             this.currentNode = startNode;
         }
-        nodeExecutionLoop: while (this.currentNode !== undefined && this.executionStateHelper.getOutcome() !== execution_1.High5ExecutionOutcome.CANCELED) {
+        this.executionStateHelper.on("cancelled", () => {
+            this.debugClient.cancel();
+        });
+        nodeExecutionLoop: while (
+            this.currentNode !== undefined &&
+            this.executionStateHelper.getOutcome() !== execution_1.High5ExecutionOutcome.CANCELED
+        ) {
             const nodeResult = StreamSingleNodeResult_1.StreamSingleNodeResult.create({
                 uuid: (0, crypto_1.randomUUID)(),
                 nodeUuid: this.currentNode.uuid,
@@ -110,40 +126,45 @@ class StreamRunner {
                 continue;
             }
             const nodeExecutor = NodeExecutor_1.default.create(this.currentNode, this, nodeResult);
-            const executableNode = await nodeExecutor.prepare(this.catalogPath);
+            const executableNode = await nodeExecutor.prepare(this.catalogPath, this.extraCatalogLocations);
             this.executionStateHelper.updateNodeResult(nodeResult);
             nodeResult.executableNode = executableNode;
             const nodeSpec = executableNode.getNodeSpecification();
-            if ((0, high5_1.isStreamNodeSpecificationV1)(nodeSpec) || (0, high5_1.isStreamNodeSpecificationV2)(nodeSpec) || (0, high5_1.isStreamNodeSpecificationV3)(nodeSpec)) {
+            if (
+                (0, high5_1.isStreamNodeSpecificationV1)(nodeSpec) ||
+                (0, high5_1.isStreamNodeSpecificationV2)(nodeSpec) ||
+                (0, high5_1.isStreamNodeSpecificationV3)(nodeSpec)
+            ) {
                 this.executionStateHelper.addRunningNode({
                     uuid: this.currentNode.uuid,
                     name: nodeSpec.name,
                     progress: 0,
                     message: "",
                 });
-            }
-            else {
+            } else {
                 nodeExecutor.error(new Error(`Unrecognized node specification version ${nodeSpec.specVersion}`));
                 return this.streamResult.lean();
             }
-            debugLoop: for (;;) {
+            debugLoop: for (; this.executionStateHelper.getOutcome() !== execution_1.High5ExecutionOutcome.CANCELED; ) {
                 let command = undefined;
-                if (this.debug === DebugState.STEP) {
-                    nodeResult.waiting = true;
-                    this.executionStateHelper.updateNodeResult(nodeResult);
-                    this.executionStateHelper.updateState(execution_1.High5ExecutionState.WAITING);
-                    command = await this.debugClient.wait(StreamRunner.DEBUG_TIMEOUT);
+                try {
+                    if (this.debug === DebugState.STEP || (this.debug === DebugState.CONTINUE && this.currentNode.breakpoint)) {
+                        nodeResult.waiting = true;
+                        this.executionStateHelper.updateNodeResult(nodeResult);
+                        this.executionStateHelper.updateState(execution_1.High5ExecutionState.WAITING);
+                        command = await this.debugClient.wait(StreamRunner.DEBUG_TIMEOUT);
+                    } else {
+                        break debugLoop;
+                    }
+                } catch (err) {
+                    if (err instanceof StreamCancelledError_1.default) {
+                        break nodeExecutionLoop;
+                    } else {
+                        throw err;
+                    }
+                } finally {
+                    nodeResult.waiting = false;
                 }
-                else if (this.debug === DebugState.CONTINUE && this.currentNode.breakpoint) {
-                    nodeResult.waiting = true;
-                    this.executionStateHelper.updateNodeResult(nodeResult);
-                    this.executionStateHelper.updateState(execution_1.High5ExecutionState.WAITING);
-                    command = await this.debugClient.wait(StreamRunner.DEBUG_TIMEOUT);
-                }
-                else {
-                    break debugLoop;
-                }
-                nodeResult.waiting = false;
                 this.executionStateHelper.updateState(execution_1.High5ExecutionState.RUNNING);
                 if (command !== undefined) {
                     switch (command.type) {
@@ -208,7 +229,7 @@ class StreamRunner {
             }
             this.executionStack.push({ node: this.currentNode, log: nodeResult });
             const nextNodeUUID = nodeResult.failed ? this.currentNode.onFail : this.currentNode.onSuccess;
-            this.currentNode = this.executionPackage.design.nodes.find(n => n.uuid === nextNodeUUID);
+            this.currentNode = this.executionPackage.design.nodes.find((n) => n.uuid === nextNodeUUID);
         }
         await this.cleanup();
         this.streamResult.failed = this.streamResult.nodeResults?.[this.streamResult.nodeResults.length - 1]?.failed ?? false;
@@ -222,14 +243,14 @@ class StreamRunner {
         return this.streamResult.lean();
     }
     setStreamNode(node) {
-        const idx = this.executionPackage.design.nodes.findIndex(n => n.uuid === node.uuid);
+        const idx = this.executionPackage.design.nodes.findIndex((n) => n.uuid === node.uuid);
         if (idx === -1) {
             throw new Error("can only replace node by node with same UUID");
         }
         this.executionPackage.design.nodes[idx] = node;
     }
     removeNodeResult(uuid) {
-        const idx = this.streamResult.nodeResults.findIndex(nr => nr.uuid === uuid);
+        const idx = this.streamResult.nodeResults.findIndex((nr) => nr.uuid === uuid);
         if (idx !== -1) {
             this.streamResult.nodeResults.splice(idx, 1);
         }
@@ -238,7 +259,7 @@ class StreamRunner {
         this.streamResult.nodeResults = [];
     }
     setNodeResultValue(uuid, key, value) {
-        const nodeResult = this.streamResult.nodeResults.find(nr => nr.uuid === uuid);
+        const nodeResult = this.streamResult.nodeResults.find((nr) => nr.uuid === uuid);
         if (!nodeResult) {
             return;
         }
@@ -254,9 +275,11 @@ class StreamRunner {
                 {
                     if (nodeResult.inputs === undefined) {
                         const spec = nodeResult.executableNode.getNodeSpecification();
-                        if (((0, high5_1.isStreamNodeSpecificationV1)(spec) || (0, high5_1.isStreamNodeSpecificationV2)(spec)) &&
+                        if (
+                            ((0, high5_1.isStreamNodeSpecificationV1)(spec) || (0, high5_1.isStreamNodeSpecificationV2)(spec)) &&
                             spec.inputs !== undefined &&
-                            spec.inputs.some(i => i.name === name)) {
+                            spec.inputs.some((i) => i.name.toLowerCase() === name.toLowerCase())
+                        ) {
                             nodeResult.inputs = [
                                 {
                                     name,
@@ -264,7 +287,7 @@ class StreamRunner {
                                     originalValue: undefined,
                                     error: false,
                                     errorMessage: "",
-                                    type: spec.inputs.find(i => i.name === name).type,
+                                    type: spec.inputs.find((i) => i.name.toLowerCase() === name.toLowerCase()).type,
                                 },
                             ];
                         }
@@ -276,14 +299,16 @@ class StreamRunner {
                 {
                     if (nodeResult.outputs === undefined) {
                         const spec = nodeResult.executableNode.getNodeSpecification();
-                        if (((0, high5_1.isStreamNodeSpecificationV1)(spec) || (0, high5_1.isStreamNodeSpecificationV2)(spec)) &&
+                        if (
+                            ((0, high5_1.isStreamNodeSpecificationV1)(spec) || (0, high5_1.isStreamNodeSpecificationV2)(spec)) &&
                             spec.outputs !== undefined &&
-                            spec.outputs.some(i => i.name === name)) {
+                            spec.outputs.some((i) => i.name.toLowerCase() === name.toLowerCase())
+                        ) {
                             nodeResult.outputs = [
                                 {
                                     name,
                                     value: undefined,
-                                    type: spec.outputs.find(i => i.name === name).type,
+                                    type: spec.outputs.find((i) => i.name.toLowerCase() === name.toLowerCase()).type,
                                 },
                             ];
                         }
@@ -294,7 +319,7 @@ class StreamRunner {
             default:
                 return;
         }
-        const elem = coll.find(e => e.name === name);
+        const elem = coll.find((e) => e.name.toLowerCase() === name.toLowerCase());
         if (elem) {
             elem.value = value;
             this.executionStateHelper.updateNodeResult(nodeResult);
@@ -307,26 +332,27 @@ class StreamRunner {
             osPlatform = platform;
             osRelease = release;
             osVersion = version;
-        }
-        else if (os_1.default.platform() === "win32") {
+        } else if (os_1.default.platform() === "win32") {
             const { platform, version, release } = (0, WindowsVersion_1.getWindowsVersion)();
             osPlatform = platform;
             osRelease = release;
             osVersion = version;
-        }
-        else {
+        } else {
             osPlatform = os_1.default.platform();
             osRelease = os_1.default.release();
             osVersion = os_1.default.version();
         }
-        const networkInterfaces = os_1.default.networkInterfaces();
-        const nics = [];
-        for (const interfaceName in networkInterfaces) {
-            networkInterfaces[interfaceName]?.forEach(({ internal, address, mac }) => {
-                if (!internal) {
-                    nics.push({ ip: address, mac });
-                }
-            });
+        const allNics = os_1.default.networkInterfaces();
+        const filteredNics = {};
+        for (const interfaceName of Object.keys(allNics)) {
+            const addresses = allNics[interfaceName];
+            if (!addresses) {
+                continue;
+            }
+            const validAddresses = addresses.filter((addr) => !addr.internal && addr.mac !== "00:00:00:00:00:00");
+            if (validAddresses.length > 0) {
+                filteredNics[interfaceName] = validAddresses;
+            }
         }
         this.agentInfo = {
             os: {
@@ -343,7 +369,7 @@ class StreamRunner {
                 used: 0,
             },
             connectionUptime: process.uptime() * 1000,
-            nics: nics,
+            nics: filteredNics,
             installerVersion: process.env.INSTALLER_VERSION,
             ip: agentInfo?.ip,
             version: agentInfo?.version,
@@ -353,8 +379,7 @@ class StreamRunner {
         if (os_1.default.platform() === "darwin") {
             const freeMem = await (0, MacOSMemory_1.getMacOSFreeMem)();
             this.agentInfo.memory.used = os_1.default.totalmem() - freeMem;
-        }
-        else {
+        } else {
             this.agentInfo.memory.used = os_1.default.totalmem() - os_1.default.freemem();
         }
     }
@@ -362,16 +387,14 @@ class StreamRunner {
         for (const fn of this.cleanupFns) {
             try {
                 await fn();
-            }
-            catch (ignored) {
-            }
+            } catch {}
         }
     }
 }
 exports.default = StreamRunner;
 var DebugState;
 (function (DebugState) {
-    DebugState[DebugState["NEXT"] = 0] = "NEXT";
-    DebugState[DebugState["CONTINUE"] = 1] = "CONTINUE";
-    DebugState[DebugState["STEP"] = 2] = "STEP";
+    DebugState[(DebugState["NEXT"] = 0)] = "NEXT";
+    DebugState[(DebugState["CONTINUE"] = 1)] = "CONTINUE";
+    DebugState[(DebugState["STEP"] = 2)] = "STEP";
 })(DebugState || (DebugState = {}));

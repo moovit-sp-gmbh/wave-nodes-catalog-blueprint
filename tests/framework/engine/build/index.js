@@ -1,14 +1,14 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod };
+    };
 Object.defineProperty(exports, "__esModule", { value: true });
 const ExecutionStateHelper_1 = __importDefault(require("./helpers/ExecutionStateHelper"));
 const StreamRunner_1 = __importDefault(require("./utils/StreamRunner"));
-process.on("uncaughtException", () => {
-});
-process.on("unhandledRejection", () => {
-});
+process.on("uncaughtException", () => {});
+process.on("unhandledRejection", () => {});
 class Engine extends StreamRunner_1.default {
     constructor(executionPackage, _, catalogPath, agentInfo) {
         super(executionPackage, undefined, catalogPath, agentInfo);
@@ -27,7 +27,7 @@ class Engine extends StreamRunner_1.default {
         return this.process(false, this.executionStateHelper);
     }
     async runDev(...incomingWaveNodeFolder) {
-        return this.process(false, this.executionStateHelper, undefined, false, incomingWaveNodeFolder);
+        return this.process(false, this.executionStateHelper, undefined, undefined, incomingWaveNodeFolder);
     }
 }
 exports.default = Engine;
