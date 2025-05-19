@@ -10,8 +10,7 @@ function extractFromJSON(jsonData, jsonPath) {
             return extractProp(JSON.parse(jsonData), jsonPath);
         }
         return extractProp(jsonData, jsonPath);
-    }
-    catch (error) {
+    } catch (error) {
         return null;
     }
 }

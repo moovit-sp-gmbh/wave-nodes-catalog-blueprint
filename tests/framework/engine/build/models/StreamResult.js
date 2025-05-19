@@ -27,8 +27,8 @@ class StreamResult {
             runTime: this.endTimestamp ? this.endTimestamp - this.startTimestamp : Date.now() - this.startTimestamp,
             webhook: this.runner.executionPackage.info?.webhook?.callbackUrl
                 ? {
-                    callbackUrl: this.runner.executionPackage.info?.webhook?.callbackUrl,
-                }
+                      callbackUrl: this.runner.executionPackage.info?.webhook?.callbackUrl,
+                  }
                 : undefined,
             target: this.runner.executionPackage.info?.target,
             trigger: trigger,
@@ -46,7 +46,7 @@ class StreamResult {
             host: "",
             endTimestamp: this.endTimestamp,
             failed: this.failed,
-            nodeResults: this.nodeResults.map(n => n.lean()),
+            nodeResults: this.nodeResults.map((n) => n.lean()),
         };
     }
 }

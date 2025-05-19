@@ -1,7 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod };
+    };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMacOSFreeMem = void 0;
 const child_process_1 = require("child_process");
@@ -31,9 +33,10 @@ async function getMacOSFreeMem() {
     const pageablePages = Number(pageablePagesStr.trim());
     if (isNaN(pageablePages)) {
         return os_1.default.freemem();
-    }
-    else {
-        const usedmem = (pageInfo["Pages wired down"] + pageInfo["Pages occupied by compressor"] + pageablePages - pageInfo["Pages purgeable"]) * pageSize;
+    } else {
+        const usedmem =
+            (pageInfo["Pages wired down"] + pageInfo["Pages occupied by compressor"] + pageablePages - pageInfo["Pages purgeable"]) *
+            pageSize;
         return os_1.default.totalmem() - usedmem;
     }
 }

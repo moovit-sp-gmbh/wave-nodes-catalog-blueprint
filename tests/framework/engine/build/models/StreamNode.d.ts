@@ -1,4 +1,7 @@
-import { StreamNodeResolvedInputs as SDKStreamNodeResolvedInputs, StreamSingleNodeResult } from "hcloud-sdk/lib/interfaces/high5/space/event/stream/node";
+import {
+    StreamNodeResolvedInputs as SDKStreamNodeResolvedInputs,
+    StreamSingleNodeResult,
+} from "hcloud-sdk/lib/interfaces/high5/space/event/stream/node";
 import { StreamNode } from "hcloud-sdk/lib/interfaces/high5/space/execution";
 import { StreamNodeSpecificationInputType, StreamNodeSpecificationOutputType } from "hcloud-sdk/lib/interfaces/high5/wave";
 

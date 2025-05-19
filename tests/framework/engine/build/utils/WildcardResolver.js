@@ -28,22 +28,19 @@ class WildcardResolver {
                         let result = this.processWildcard(wildcard.trim(), interrupt);
                         if (result === undefined) {
                             throw new Error(`Unable to resolve wildcard: {{${wildcard}}}`);
-                        }
-                        else {
+                        } else {
                             if (typeof result === "object") {
                                 result = JSON.stringify(result);
                             }
                             if (input === `{{${wildcard}}}`) {
                                 return result;
-                            }
-                            else {
+                            } else {
                                 input = input.split(`{{${wildcard}}}`).join(result);
                             }
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 break;
             }
         }
@@ -81,14 +78,15 @@ class WildcardResolver {
         return (0, JsonPathExtractor_1.extractFromJSON)(this.streamResult.payload.data, wildcard);
     }
     handleStreamVariableWildcard(wildcard) {
-        const resolvedVariable = this.streamResult.streamVariables ? (0, JsonPathExtractor_1.extractFromJSON)(this.streamResult.streamVariables, wildcard) : undefined;
-        if (!resolvedVariable)
-            throw new Error(`Stream variable '${wildcard}' does not exist`);
+        const resolvedVariable = this.streamResult.streamVariables
+            ? (0, JsonPathExtractor_1.extractFromJSON)(this.streamResult.streamVariables, wildcard)
+            : undefined;
+        if (!resolvedVariable) throw new Error(`Stream variable '${wildcard}' does not exist`);
         return resolvedVariable;
     }
     handleNodeWildcard(wildcard, interrupt) {
         const [uuid, type, ...rest] = wildcard;
-        const node = this.streamResult.nodeResults.find(n => n.nodeUuid === uuid);
+        const node = this.streamResult.nodeResults.find((n) => n.nodeUuid === uuid);
         if (!node) {
             return undefined;
         }
@@ -96,10 +94,10 @@ class WildcardResolver {
         const [name, ...path] = rest;
         switch (type.toUpperCase()) {
             case "INPUT":
-                value = node.inputs?.find(i => i.name === name)?.value;
+                value = node.inputs?.find((i) => i.name === name)?.value;
                 break;
             case "OUTPUT":
-                value = node.outputs?.find(i => i.name === name)?.value;
+                value = node.outputs?.find((i) => i.name === name)?.value;
                 break;
             case "ERROR":
                 value = node.error;

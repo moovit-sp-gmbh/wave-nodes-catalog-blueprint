@@ -1,7 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod };
+    };
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const index_1 = require("hcloud-sdk/lib/interfaces/high5/space/execution/index");
@@ -29,8 +31,7 @@ class ExecutionStateHelper {
                     ip: agentInfo.ip,
                 },
             };
-        }
-        else {
+        } else {
             this.streamStatus.streamId = this.streamId;
             this.streamStatus.runningNodes = [];
             this.streamStatus.message = "";
@@ -87,14 +88,18 @@ class ExecutionStateHelper {
             return;
         }
         if (!this.streamStatus.runningNodes) {
-            this.streamStatus.runningNodes = [{ uuid: nodeUuid, name: "", progress: runningNodeUpdate.progress || -1, message: runningNodeUpdate.message || "" }];
+            this.streamStatus.runningNodes = [
+                { uuid: nodeUuid, name: "", progress: runningNodeUpdate.progress || -1, message: runningNodeUpdate.message || "" },
+            ];
             return;
         }
         const index = this.streamStatus.runningNodes.findIndex((node) => node.uuid === nodeUuid);
         if (index > -1) {
-            if (typeof runningNodeUpdate.progress === "number" &&
+            if (
+                typeof runningNodeUpdate.progress === "number" &&
                 runningNodeUpdate.progress >= -1 &&
-                runningNodeUpdate.progress !== this.streamStatus.runningNodes[index].progress) {
+                runningNodeUpdate.progress !== this.streamStatus.runningNodes[index].progress
+            ) {
                 this.streamStatus.runningNodes[index].progress = runningNodeUpdate.progress;
             }
             if (runningNodeUpdate.message && runningNodeUpdate.message !== this.streamStatus.runningNodes[index].message) {
@@ -103,19 +108,17 @@ class ExecutionStateHelper {
         }
     }
     getRunningNode(nodeUuid) {
-        if (!this.streamStatus.runningNodes)
-            return undefined;
+        if (!this.streamStatus.runningNodes) return undefined;
         return this.streamStatus.runningNodes.find((node) => node.uuid === nodeUuid);
     }
     updateNodeResult(nodeResult) {
         if (this.streamStatus.state === index_1.High5ExecutionState.COMPLETED) {
             return;
         }
-        const index = this.streamLog.nodeResults.findIndex(node => node.uuid === nodeResult.uuid);
+        const index = this.streamLog.nodeResults.findIndex((node) => node.uuid === nodeResult.uuid);
         if (index > -1) {
             this.streamLog.nodeResults[index] = nodeResult.lean();
-        }
-        else {
+        } else {
             this.streamLog.nodeResults.push(nodeResult.lean());
         }
     }
@@ -125,17 +128,16 @@ class ExecutionStateHelper {
         }
         if (this.streamLog.nodeResultsToRemove === undefined) {
             this.streamLog.nodeResultsToRemove = [uuid];
-        }
-        else if (!this.streamLog.nodeResultsToRemove.includes(uuid)) {
+        } else if (!this.streamLog.nodeResultsToRemove.includes(uuid)) {
             this.streamLog.nodeResultsToRemove.push(uuid);
         }
-        const index = this.streamLog.nodeResults.findIndex(node => node.uuid === uuid);
+        const index = this.streamLog.nodeResults.findIndex((node) => node.uuid === uuid);
         if (index > -1) {
             this.streamLog.nodeResults.splice(index, 1);
         }
     }
     setNodeResults(nodeResults) {
-        this.streamLog.nodeResults = nodeResults.map(n => n.lean());
+        this.streamLog.nodeResults = nodeResults.map((n) => n.lean());
     }
     cancelExecution() {
         this.updateStateAndOutcome({ state: index_1.High5ExecutionState.COMPLETED, outcome: index_1.High5ExecutionOutcome.CANCELED });
@@ -163,11 +165,16 @@ class ExecutionStateHelper {
             },
         };
         this.executionPackage.hcl.High5.space.execute
-            .high5ExecutionStatusAndLogResponse(this.executionPackage.orgName, this.executionPackage.spaceName, this.executionPackage.secret, high5ExecutionResponse)
-            .catch(err => {
-            const errorLogPath = path_1.default.join(__dirname, "..", "..", "..", "..", "..", "waveError.log");
-            fs_1.default.appendFileSync(errorLogPath, `Failed to report unhandled error for stream '${this.streamId}': ${err}`);
-        });
+            .high5ExecutionStatusAndLogResponse(
+                this.executionPackage.orgName,
+                this.executionPackage.spaceName,
+                this.executionPackage.secret,
+                high5ExecutionResponse
+            )
+            .catch((err) => {
+                const errorLogPath = path_1.default.join(__dirname, "..", "..", "..", "..", "..", "waveError.log");
+                fs_1.default.appendFileSync(errorLogPath, `Failed to report unhandled error for stream '${this.streamId}': ${err}`);
+            });
     }
 }
 exports.default = ExecutionStateHelper;

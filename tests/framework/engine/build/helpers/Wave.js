@@ -1,7 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __importDefault =
+    (this && this.__importDefault) ||
+    function (mod) {
+        return mod && mod.__esModule ? mod : { default: mod };
+    };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AxiosHelper = void 0;
 const axios_1 = __importDefault(require("axios"));
@@ -88,12 +90,11 @@ class Logger {
         this.node.getExecutionStateHelper().updateProgressAndMessage({ progress, message }, this.node.getNodeUuid());
     }
     addNodeLog(logMessage) {
-        const nodeResult = this.node.getStreamResult().nodeResults.find(result => result.nodeUuid === this.node.getNodeUuid());
+        const nodeResult = this.node.getStreamResult().nodeResults.find((result) => result.nodeUuid === this.node.getNodeUuid());
         if (nodeResult) {
             if (nodeResult.logs) {
                 nodeResult.logs.push(logMessage);
-            }
-            else {
+            } else {
                 nodeResult.logs = [logMessage];
             }
         }
@@ -112,22 +113,25 @@ class Inputs {
         return [];
     }
     getInputByName(inputName) {
-        return this.node.getInputs()?.find(i => i.name === inputName);
+        return this.node.getInputs()?.find((i) => i.name === inputName);
     }
     getPreresolvedInputByName(inputName) {
         const spec = this.node.getNodeSpecification();
-        if ((0, wave_1.isStreamNodeSpecificationV1)(spec) || (0, wave_1.isStreamNodeSpecificationV2)(spec) || (0, wave_1.isStreamNodeSpecificationV3)(spec)) {
-            return spec.inputs?.find(i => i.name === inputName);
-        }
-        else {
+        if (
+            (0, wave_1.isStreamNodeSpecificationV1)(spec) ||
+            (0, wave_1.isStreamNodeSpecificationV2)(spec) ||
+            (0, wave_1.isStreamNodeSpecificationV3)(spec)
+        ) {
+            return spec.inputs?.find((i) => i.name === inputName);
+        } else {
             throw new UnknownStreamNodeSpecificationVersion_1.default(spec);
         }
     }
     getInputValueByInputName(inputName) {
-        return this.node.getInputs()?.find(i => i.name === inputName)?.value;
+        return this.node.getInputs()?.find((i) => i.name === inputName)?.value;
     }
     getInputOriginalValueByInputName(inputName) {
-        return this.node.getInputs()?.find(i => i.name === inputName)?.originalValue;
+        return this.node.getInputs()?.find((i) => i.name === inputName)?.originalValue;
     }
 }
 class Outputs {
@@ -145,16 +149,16 @@ class Outputs {
         return [];
     }
     getOutputByName(outputName) {
-        return this.node.getOutputs()?.find(i => i.name === outputName);
+        return this.node.getOutputs()?.find((i) => i.name === outputName);
     }
     getOutputValueByOutputName(outputName) {
-        return this.node.getOutputs()?.find(i => i.name === outputName)?.value;
+        return this.node.getOutputs()?.find((i) => i.name === outputName)?.value;
     }
     setOutput(name, value, type) {
         this.node.setOutput(name, value, type);
     }
     async executeAdditionalConnector(connectorName) {
-        const nodeUUID = this.node.additionalConnectors?.find(c => c.name === connectorName)?.targetUuid;
+        const nodeUUID = this.node.additionalConnectors?.find((c) => c.name === connectorName)?.targetUuid;
         if (nodeUUID) {
             return this.executor.process(false, this.node.getExecutionStateHelper(), nodeUUID, true);
         }
@@ -170,7 +174,7 @@ class FileAndFolderHelper {
         const executionStateHelper = this.node.getExecutionStateHelper();
         const fileExists = await promises_1.default
             .stat(filePath)
-            .then(s => s)
+            .then((s) => s)
             .catch(() => false);
         if (fileExists) {
             switch (duplicateFileOption) {
@@ -178,12 +182,16 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage("Creating file (existing file with same name found, will be overwritten)...");
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.RENAME_EXISTING:
-                    executionStateHelper.setStreamMessage("Creating file (existing file with same name found, existing file will be renamed)...");
+                    executionStateHelper.setStreamMessage(
+                        "Creating file (existing file with same name found, existing file will be renamed)..."
+                    );
                     await promises_1.default.rename(filePath, await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(filePath));
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.INCREMENT_NAME:
                     filePath = await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(filePath);
-                    executionStateHelper.setStreamMessage(`Creating file (existing file with same name found, file will be created as "${filePath}")...`);
+                    executionStateHelper.setStreamMessage(
+                        `Creating file (existing file with same name found, file will be created as "${filePath}")...`
+                    );
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.FAIL:
                     throw new Error(`Unexpected error when creating file: File ${filePath} already exists`);
@@ -192,8 +200,7 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage(`Creating file aborted: File ${filePath} already exists`);
                     return filePath;
             }
-        }
-        else {
+        } else {
             executionStateHelper.setStreamMessage(`Creating file...`);
         }
         await promises_1.default.writeFile(filePath, "");
@@ -203,17 +210,21 @@ class FileAndFolderHelper {
         const executionStateHelper = this.node.getExecutionStateHelper();
         const folderExists = await promises_1.default
             .stat(folderPath)
-            .then(s => s)
+            .then((s) => s)
             .catch(() => false);
         if (folderExists) {
             switch (duplicateFolderOption) {
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.RENAME_EXISTING:
-                    executionStateHelper.setStreamMessage("Creating folder (existing folder with same name found, existing folder will be renamed)...");
+                    executionStateHelper.setStreamMessage(
+                        "Creating folder (existing folder with same name found, existing folder will be renamed)..."
+                    );
                     await promises_1.default.rename(folderPath, await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(folderPath));
                     break;
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.INCREMENT_NAME:
                     folderPath = await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(folderPath);
-                    executionStateHelper.setStreamMessage(`Creating folder (existing folder with same name found, folder will be created as "${folderPath}")...`);
+                    executionStateHelper.setStreamMessage(
+                        `Creating folder (existing folder with same name found, folder will be created as "${folderPath}")...`
+                    );
                     break;
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.FAIL:
                     throw new Error(`Unexpected error when creating folder: Folder ${folderPath} already exists`);
@@ -222,8 +233,7 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage(`Creating folder aborted: File ${folderPath} already exists`);
                     return folderPath;
             }
-        }
-        else {
+        } else {
             executionStateHelper.setStreamMessage(`Creating folder...`);
         }
         await promises_1.default.mkdir(folderPath, { recursive: true });
@@ -233,7 +243,7 @@ class FileAndFolderHelper {
         const executionStateHelper = this.node.getExecutionStateHelper();
         const fileExists = await promises_1.default
             .stat(destFilePath)
-            .then(s => s)
+            .then((s) => s)
             .catch(() => false);
         if (fileExists) {
             switch (duplicateFileOption) {
@@ -241,12 +251,16 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage("Copying file (existing destination file found, will be overwritten)...");
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.RENAME_EXISTING:
-                    executionStateHelper.setStreamMessage("Copying file (existing destination file found, existing destination file will be renamed)...");
+                    executionStateHelper.setStreamMessage(
+                        "Copying file (existing destination file found, existing destination file will be renamed)..."
+                    );
                     await promises_1.default.rename(destFilePath, await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFilePath));
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.INCREMENT_NAME:
                     destFilePath = await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFilePath);
-                    executionStateHelper.setStreamMessage(`Copying file (existing destination file found, the file to copy will be saved as "${destFilePath}")...`);
+                    executionStateHelper.setStreamMessage(
+                        `Copying file (existing destination file found, the file to copy will be saved as "${destFilePath}")...`
+                    );
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.FAIL:
                     throw new Error(`Unexpected error when copying file: Destination file ${destFilePath} already exists`);
@@ -255,15 +269,19 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage(`Copying file aborted: Destination file ${destFilePath} already exists`);
                     return { finalPath: srcFilePath };
             }
-        }
-        else {
+        } else {
             executionStateHelper.setStreamMessage("Copying file...");
         }
-        const checksum = await (0, FileAndFolderHelper_1._copyFile)(srcFilePath, destFilePath, progressCallback, getSrcChecksum, abortSignal);
+        const checksum = await (0, FileAndFolderHelper_1._copyFile)(
+            srcFilePath,
+            destFilePath,
+            progressCallback,
+            getSrcChecksum,
+            abortSignal
+        );
         if (getSrcChecksum) {
             return { finalPath: destFilePath, srcChecksum: checksum };
-        }
-        else {
+        } else {
             return destFilePath;
         }
     }
@@ -271,17 +289,24 @@ class FileAndFolderHelper {
         const executionStateHelper = this.node.getExecutionStateHelper();
         const folderExists = await promises_1.default
             .stat(destFolderPath)
-            .then(s => s)
+            .then((s) => s)
             .catch(() => false);
         if (folderExists) {
             switch (duplicateFolderOption) {
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.RENAME_EXISTING:
-                    executionStateHelper.setStreamMessage("Copying folder (existing destination folder found, existing destination folder will be renamed)...");
-                    await promises_1.default.rename(destFolderPath, await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFolderPath));
+                    executionStateHelper.setStreamMessage(
+                        "Copying folder (existing destination folder found, existing destination folder will be renamed)..."
+                    );
+                    await promises_1.default.rename(
+                        destFolderPath,
+                        await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFolderPath)
+                    );
                     break;
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.INCREMENT_NAME:
                     destFolderPath = await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFolderPath);
-                    executionStateHelper.setStreamMessage(`Copying folder (existing destination folder found, the folder to copy will be saved as "${destFolderPath}")...`);
+                    executionStateHelper.setStreamMessage(
+                        `Copying folder (existing destination folder found, the folder to copy will be saved as "${destFolderPath}")...`
+                    );
                     break;
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.FAIL:
                     throw new Error(`Unexpected error when copying folder: Destination folder ${destFolderPath} already exists`);
@@ -290,15 +315,19 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage(`Copying folder aborted: Destination folder ${destFolderPath} already exists`);
                     return { finalPath: srcFolderPath };
             }
-        }
-        else {
+        } else {
             executionStateHelper.setStreamMessage("Copying folder...");
         }
-        const checksum = await (0, FileAndFolderHelper_1._copyFolder)(srcFolderPath, destFolderPath, progressCallback, getSrcChecksum, abortSignal);
+        const checksum = await (0, FileAndFolderHelper_1._copyFolder)(
+            srcFolderPath,
+            destFolderPath,
+            progressCallback,
+            getSrcChecksum,
+            abortSignal
+        );
         if (getSrcChecksum) {
             return { finalPath: destFolderPath, srcChecksum: checksum };
-        }
-        else {
+        } else {
             return destFolderPath;
         }
     }
@@ -306,7 +335,7 @@ class FileAndFolderHelper {
         const executionStateHelper = this.node.getExecutionStateHelper();
         const fileExists = await promises_1.default
             .stat(destFilePath)
-            .then(s => s)
+            .then((s) => s)
             .catch(() => false);
         if (fileExists) {
             switch (duplicateFileOption) {
@@ -314,12 +343,16 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage("Moving file (existing destination file found, will be overwritten)...");
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.RENAME_EXISTING:
-                    executionStateHelper.setStreamMessage("Moving file (existing destination file found, existing destination file will be renamed)...");
+                    executionStateHelper.setStreamMessage(
+                        "Moving file (existing destination file found, existing destination file will be renamed)..."
+                    );
                     await promises_1.default.rename(destFilePath, await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFilePath));
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.INCREMENT_NAME:
                     destFilePath = await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFilePath);
-                    executionStateHelper.setStreamMessage(`Moving file (existing destination file found, the file to move will be saved as "${destFilePath}")...`);
+                    executionStateHelper.setStreamMessage(
+                        `Moving file (existing destination file found, the file to move will be saved as "${destFilePath}")...`
+                    );
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.FAIL:
                     throw new Error(`Unexpected error when moving file: Destination file ${destFilePath} already exists`);
@@ -328,15 +361,19 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage(`Moving file aborted: Destination file ${destFilePath} already exists`);
                     return { finalPath: srcFilePath };
             }
-        }
-        else {
+        } else {
             executionStateHelper.setStreamMessage("Moving file...");
         }
-        const checksum = await (0, FileAndFolderHelper_1._moveFile)(srcFilePath, destFilePath, progressCallback, getSrcChecksum, abortSignal);
+        const checksum = await (0, FileAndFolderHelper_1._moveFile)(
+            srcFilePath,
+            destFilePath,
+            progressCallback,
+            getSrcChecksum,
+            abortSignal
+        );
         if (getSrcChecksum) {
             return { finalPath: destFilePath, srcChecksum: checksum };
-        }
-        else {
+        } else {
             return destFilePath;
         }
     }
@@ -344,17 +381,24 @@ class FileAndFolderHelper {
         const executionStateHelper = this.node.getExecutionStateHelper();
         const folderExists = await promises_1.default
             .stat(destFolderPath)
-            .then(s => s)
+            .then((s) => s)
             .catch(() => false);
         if (folderExists) {
             switch (duplicateFolderOption) {
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.RENAME_EXISTING:
-                    executionStateHelper.setStreamMessage("Moving folder (existing destination folder found, existing destination folder will be renamed)...");
-                    await promises_1.default.rename(destFolderPath, await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFolderPath));
+                    executionStateHelper.setStreamMessage(
+                        "Moving folder (existing destination folder found, existing destination folder will be renamed)..."
+                    );
+                    await promises_1.default.rename(
+                        destFolderPath,
+                        await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFolderPath)
+                    );
                     break;
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.INCREMENT_NAME:
                     destFolderPath = await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(destFolderPath);
-                    executionStateHelper.setStreamMessage(`Moving folder (existing destination folder found, the folder to move will be saved as "${destFolderPath}")...`);
+                    executionStateHelper.setStreamMessage(
+                        `Moving folder (existing destination folder found, the folder to move will be saved as "${destFolderPath}")...`
+                    );
                     break;
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.FAIL:
                     throw new Error(`Unexpected error when moving folder: Destination folder ${destFolderPath} already exists`);
@@ -363,15 +407,19 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage(`Moving folder aborted: Destination folder ${destFolderPath} already exists`);
                     return { finalPath: srcFolderPath };
             }
-        }
-        else {
+        } else {
             executionStateHelper.setStreamMessage("Moving folder...");
         }
-        const checksum = await (0, FileAndFolderHelper_1._moveFolder)(srcFolderPath, destFolderPath, progressCallback, getSrcChecksum, abortSignal);
+        const checksum = await (0, FileAndFolderHelper_1._moveFolder)(
+            srcFolderPath,
+            destFolderPath,
+            progressCallback,
+            getSrcChecksum,
+            abortSignal
+        );
         if (getSrcChecksum) {
             return { finalPath: destFolderPath, srcChecksum: checksum };
-        }
-        else {
+        } else {
             return destFolderPath;
         }
     }
@@ -380,7 +428,7 @@ class FileAndFolderHelper {
         let newFilePath = path_1.default.join(path_1.default.dirname(filePath), newName);
         const fileExists = await promises_1.default
             .stat(newFilePath)
-            .then(s => s)
+            .then((s) => s)
             .catch(() => false);
         if (fileExists) {
             switch (duplicateFileOption) {
@@ -393,7 +441,9 @@ class FileAndFolderHelper {
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.INCREMENT_NAME:
                     newFilePath = await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(newFilePath);
-                    executionStateHelper.setStreamMessage(`Renaming file (existing file with same name found, the file to rename will be saved as "${newFilePath}") instead...`);
+                    executionStateHelper.setStreamMessage(
+                        `Renaming file (existing file with same name found, the file to rename will be saved as "${newFilePath}") instead...`
+                    );
                     break;
                 case DuplicateFileOptionEnum_1.DuplicateFileOption.FAIL:
                     throw new Error(`Unexpected error when renaming file: File ${newFilePath} already exists`);
@@ -402,8 +452,7 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage(`Renaming file aborted: File ${newFilePath} already exists`);
                     return filePath;
             }
-        }
-        else {
+        } else {
             executionStateHelper.setStreamMessage("Renaming file...");
         }
         await promises_1.default.rename(filePath, newFilePath);
@@ -415,17 +464,22 @@ class FileAndFolderHelper {
         let newFolderPath = path_1.default.join(path_1.default.dirname(folderPath), newName);
         const folderExists = await promises_1.default
             .stat(newFolderPath)
-            .then(s => s)
+            .then((s) => s)
             .catch(() => false);
         if (folderExists) {
             switch (duplicateFolderOption) {
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.RENAME_EXISTING:
                     executionStateHelper.setStreamMessage("Renaming folder (existing folder with same name found, it will be renamed)...");
-                    await promises_1.default.rename(newFolderPath, await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(newFolderPath));
+                    await promises_1.default.rename(
+                        newFolderPath,
+                        await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(newFolderPath)
+                    );
                     break;
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.INCREMENT_NAME:
                     newFolderPath = await (0, FileAndFolderHelper_1.incrementFileOrFolderName)(newFolderPath);
-                    executionStateHelper.setStreamMessage(`Renaming folder (existing folder with same name found, the folder to rename will be saved as "${newFolderPath}") instead...`);
+                    executionStateHelper.setStreamMessage(
+                        `Renaming folder (existing folder with same name found, the folder to rename will be saved as "${newFolderPath}") instead...`
+                    );
                     break;
                 case DuplicateFolderOptionEnum_1.DuplicateFolderOption.FAIL:
                     throw new Error(`Unexpected error when renaming folder: Folder ${newFolderPath} already exists`);
@@ -434,8 +488,7 @@ class FileAndFolderHelper {
                     executionStateHelper.setStreamMessage(`Renaming folder aborted: Folder ${newFolderPath} already exists`);
                     return folderPath;
             }
-        }
-        else {
+        } else {
             executionStateHelper.setStreamMessage("Renaming folder...");
         }
         await promises_1.default.rename(folderPath, newFolderPath);
@@ -460,20 +513,16 @@ class AxiosHelper {
     async makeRequest(config) {
         try {
             return (await (0, axios_1.default)(config)).data;
-        }
-        catch (err) {
+        } catch (err) {
             if (axios_1.default.isAxiosError(err)) {
                 if (err.response && typeof err.response.data === "string") {
                     throw new Error(`Axios Error: ${err.response.data} (${err.response.status})`);
-                }
-                else if (err.response && err.response.data && err.response.data.message) {
+                } else if (err.response && err.response.data && err.response.data.message) {
                     throw new Error(`Axios Error: ${err.response.data.message} (${err.response.status})`);
-                }
-                else {
+                } else {
                     throw new Error(`Axios Error: ${err.message} (${err.response?.status})`);
                 }
-            }
-            else {
+            } else {
                 throw err;
             }
         }
@@ -499,27 +548,24 @@ class AxiosHelper {
             if (config.maxRedirects > 0) {
                 curl += `  -L --max-redirs ${config.maxRedirects} \\\n`;
             }
-        }
-        else {
+        } else {
             curl += `  -L --max-redirs 5 \\\n`;
         }
         let url = config.url;
         if (url && config.params) {
             const serialize = (params, prefix = "") => {
                 return Object.keys(params)
-                    .map(key => {
-                    const value = params[key];
-                    const paramKey = prefix ? `${prefix}[${encodeURIComponent(key)}]` : encodeURIComponent(key);
-                    if (Array.isArray(value)) {
-                        return value.map((v) => `${paramKey}=${encodeURIComponent(v)}`).join("&");
-                    }
-                    else if (typeof value === "object" && value !== null) {
-                        return serialize(value, paramKey);
-                    }
-                    else {
-                        return `${paramKey}=${encodeURIComponent(value)}`;
-                    }
-                })
+                    .map((key) => {
+                        const value = params[key];
+                        const paramKey = prefix ? `${prefix}[${encodeURIComponent(key)}]` : encodeURIComponent(key);
+                        if (Array.isArray(value)) {
+                            return value.map((v) => `${paramKey}=${encodeURIComponent(v)}`).join("&");
+                        } else if (typeof value === "object" && value !== null) {
+                            return serialize(value, paramKey);
+                        } else {
+                            return `${paramKey}=${encodeURIComponent(value)}`;
+                        }
+                    })
                     .join("&");
             };
             const paramsString = serialize(config.params);
@@ -533,24 +579,31 @@ class AxiosHelper {
             if (Array.isArray(item)) {
                 const cleanedArray = item
                     .map(cleanObject)
-                    .filter(val => val !== undefined && val !== null && !((Array.isArray(val) && val.length === 0) || (typeof val === "object" && Object.keys(val).length === 0)));
+                    .filter(
+                        (val) =>
+                            val !== undefined &&
+                            val !== null &&
+                            !((Array.isArray(val) && val.length === 0) || (typeof val === "object" && Object.keys(val).length === 0))
+                    );
                 return cleanedArray.length > 0 ? cleanedArray : undefined;
-            }
-            else if (item !== null && typeof item === "object") {
+            } else if (item !== null && typeof item === "object") {
                 const cleanedItem = Object.entries(item).reduce((acc, [key, value]) => {
                     const cleanedValue = cleanObject(value);
-                    if (cleanedValue !== undefined &&
+                    if (
+                        cleanedValue !== undefined &&
                         cleanedValue !== null &&
-                        !((typeof cleanedValue === "string" && cleanedValue.trim() === "") ||
+                        !(
+                            (typeof cleanedValue === "string" && cleanedValue.trim() === "") ||
                             (Array.isArray(cleanedValue) && cleanedValue.length === 0) ||
-                            (typeof cleanedValue === "object" && Object.keys(cleanedValue).length === 0))) {
+                            (typeof cleanedValue === "object" && Object.keys(cleanedValue).length === 0)
+                        )
+                    ) {
                         acc[key] = cleanedValue;
                     }
                     return acc;
                 }, {});
                 return Object.keys(cleanedItem).length > 0 ? cleanedItem : undefined;
-            }
-            else if (item === undefined || item === null || (typeof item === "string" && item.trim() === "")) {
+            } else if (item === undefined || item === null || (typeof item === "string" && item.trim() === "")) {
                 return undefined;
             }
             return item;

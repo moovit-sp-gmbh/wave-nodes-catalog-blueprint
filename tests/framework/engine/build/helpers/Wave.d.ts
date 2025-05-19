@@ -2,7 +2,11 @@
 import { AxiosRequestConfig } from "axios";
 import HCloud from "hcloud-sdk";
 import { StreamResult } from "hcloud-sdk/lib/interfaces/high5";
-import { StreamNodeSpecification, StreamNodeSpecificationInput, StreamNodeSpecificationOutputType } from "hcloud-sdk/lib/interfaces/high5/wave";
+import {
+    StreamNodeSpecification,
+    StreamNodeSpecificationInput,
+    StreamNodeSpecificationOutputType,
+} from "hcloud-sdk/lib/interfaces/high5/wave";
 import { DuplicateFileOption } from "../models/DuplicateFileOptionEnum";
 import { DuplicateFolderOption } from "../models/DuplicateFolderOptionEnum";
 import { StreamNodeOutput, StreamNodeResolvedInput } from "../models/StreamNode";

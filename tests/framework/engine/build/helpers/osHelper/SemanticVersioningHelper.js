@@ -19,11 +19,9 @@ function parseInt(s) {
 }
 function compare(s1, s2) {
     let c = s1[0] - s2[0];
-    if (c !== 0)
-        return c;
+    if (c !== 0) return c;
     c = s1[1] - s2[1];
-    if (c !== 0)
-        return c;
+    if (c !== 0) return c;
     return s1[2] - s2[2];
 }
 exports.compare = compare;
