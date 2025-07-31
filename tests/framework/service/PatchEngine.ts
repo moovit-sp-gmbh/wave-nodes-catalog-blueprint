@@ -1,4 +1,4 @@
-import type Wave from "../engine/build/helpers/Wave";
+import type Wave from "wave-engine/helpers/Wave";
 
 const patchEngine = (wave: Wave, engineVersion: string): Wave => {
     if (engineVersion.startsWith("1.5.0") || engineVersion.startsWith("1.4.0")) {

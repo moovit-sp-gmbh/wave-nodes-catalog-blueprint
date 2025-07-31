@@ -1,4 +1,4 @@
-import type { StreamNodeOutput, StreamNodeResolvedInput } from "../../engine/build/models/StreamNode";
+import type { StreamNodeOutput, StreamNodeResolvedInput } from "wave-engine/models/StreamNode";
 
 interface NodeInputs {
     [key: string]: unknown;

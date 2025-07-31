@@ -1,23 +1,20 @@
-import { resolveInputs } from "../helpers/InputHelper";
 import { High5ExecutionPackage, High5ExecutionPayloadType } from "hcloud-sdk/lib/interfaces/high5/space/execution";
+import type { StreamNodeOutput } from "wave-engine/models/StreamNode";
 import type { Design } from "../definitions/application/Design";
+import { Engine, getAgentInfo, importEngine } from "../definitions/application/Engine";
 import type { ExtendedHigh5ExecutionPackage } from "../definitions/application/Execution";
 import type { NodeData } from "../definitions/application/StreamNode";
-import { Engine, getAgentInfo, importEngine } from "../definitions/application/Engine";
 import VerifyFileSignature from "../definitions/application/VerifyFileSignature";
-import type { StreamNodeOutput } from "../engine/build/models/StreamNode";
+import { resolveInputs } from "../helpers/InputHelper";
+import { getWaveEngineFolder, getWaveNodeFolder } from "../utils/folders";
 import { patchEngine } from "./PatchEngine";
-import { getWaveNodeFolder, getWaveEngineFolder } from "../utils/folders";
 
 const parsePayload = (executionPackage: High5ExecutionPackage) => {
     let payloadData = undefined;
     switch (executionPackage.payload.type) {
         case High5ExecutionPayloadType.JSON:
             try {
-                payloadData =
-                    typeof executionPackage.payload.data !== "object"
-                        ? JSON.parse(executionPackage.payload.data)
-                        : executionPackage.payload.data;
+                payloadData = typeof executionPackage.payload.data !== "object" ? JSON.parse(executionPackage.payload.data) : executionPackage.payload.data;
             } catch (error: unknown) {
                 console.error(`Unable to parse payload to json - ${error}`);
                 return null;
@@ -33,20 +30,20 @@ const parsePayload = (executionPackage: High5ExecutionPackage) => {
 
 const getEngineInstance = async (executionPackage: ExtendedHigh5ExecutionPackage): Promise<Engine | undefined> => {
     const folder = getWaveEngineFolder();
-    if (!folder) return;
+    if (!folder) return undefined;
     try {
         const module = await importEngine(folder);
         return new module.default(executionPackage, VerifyFileSignature, "", getAgentInfo());
     } catch (err: unknown) {
         console.error(`Unable to load Engine file - ${err}`);
     }
-    return;
+    return undefined;
 };
 
 const runEngine = async (executionPackage: ExtendedHigh5ExecutionPackage) => {
     const engine = await getEngineInstance(executionPackage);
     if (!engine) {
-        throw new Error("Can't load the engine!");
+        console.error("Can't load the engine!");
         return [];
     }
     const nodeCatalogs = getWaveNodeFolder();

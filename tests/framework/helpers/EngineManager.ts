@@ -1,4 +1,3 @@
-import { setWaveEngineFolder } from "../utils/folders";
 import crypto from "crypto";
 import { existsSync, mkdirSync } from "fs";
 import fs, { rm } from "fs/promises";
@@ -7,8 +6,9 @@ import { Engine, EngineRegistry, WaveEngine } from "hcloud-sdk/lib/interfaces/hi
 import { dump, load } from "js-yaml";
 import { homedir } from "os";
 import path from "path";
-import tar from "tar";
+import * as tar from "tar";
 import { getConfig, loadConfig } from "../config/ConfigReader";
+import { setWaveEngineFolder } from "../utils/folders";
 import { downloadFile } from "./DownloadHelper";
 
 class EngineManager {
@@ -31,8 +31,7 @@ class EngineManager {
         } catch (error) {
             console.error(`Can not create engines folder: '${String(error)}`);
             const stat = await fs.stat(this.baseEngineFolder);
-            if (!stat.isDirectory())
-                throw new Error(`Unable to create engine folder. A file already exists with the same path. ${this.baseEngineFolder}`);
+            if (!stat.isDirectory()) throw new Error(`Unable to create engine folder. A file already exists with the same path. ${this.baseEngineFolder}`);
         }
     }
 
@@ -47,7 +46,7 @@ class EngineManager {
     }
 
     private async unPackEngine(enginePath: string, outputLocationPath: string): Promise<string> {
-        await tar.x({ file: enginePath, cwd: outputLocationPath });
+        await tar.extract({ file: enginePath, cwd: outputLocationPath, gzip: true });
 
         const engineFile = path.join(outputLocationPath, "build", "index.js");
         if (!existsSync(engineFile)) {
@@ -110,9 +109,7 @@ class EngineManager {
         if (!existsSync(metadataFile)) return undefined;
         const content = load(await fs.readFile(metadataFile, "utf8")) as Record<string, WaveEngine>;
         if (this.version && content && this.version in content) {
-            return existsSync(path.join(this.baseEngineFolder, this.folderName, content[this.version].md5, "build", "index.js"))
-                ? content[this.version]
-                : undefined;
+            return existsSync(path.join(this.baseEngineFolder, this.folderName, content[this.version].md5, "build", "index.js")) ? content[this.version] : undefined;
         }
         return undefined;
     }
@@ -179,11 +176,11 @@ class EngineManager {
             engines = engines.filter((engine: WaveEngine) => !engine.dev);
             engine = engines[engines.length - 1];
         } else {
-            engine = engines.find((e) => e.version === this.version);
+            engine = engines.find(e => e.version === this.version);
             if (!engine)
                 throw new Error(
                     `Wave Engine version ${this.version} does not exist, please try one of the following values: ${engines
-                        .map((e) => e.version)
+                        .map(e => e.version)
                         .sort()
                         .join(", ")}`
                 );

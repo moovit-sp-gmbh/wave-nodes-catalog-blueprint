@@ -1,27 +1,42 @@
-import { addWaveNodeFolder, executeWithAllEngines } from ".";
+import { addWaveNodeFolder, executeChain } from ".";
 import { High5ExecutionPayloadType } from "hcloud-sdk/lib/interfaces/high5/space/execution";
 import path from "path";
 
+const engineVersions = ["2.0.0-dev-30"];
 addWaveNodeFolder(path.resolve(path.join("..", "wave-nodes", "build", "catalog")));
 const payload = { type: High5ExecutionPayloadType.JSON, data: "{}" };
 
 const DESIGN = {
-    node: "UpperCaseAction",
+    node: "PythonAction",
     uuid: 1,
     inputs: {
-        String: "All Characters In This Line Will Be Converted To Lowercase.",
+        ["Path to the Python interpreter"]: "python3",
+        Code: "from wonderwords import RandomWord as RW; print('Random words:', ', '.join([RW().word().capitalize() for i in range(10)]), end='.')",
+        Dependencies: "wonderwords",
     },
     onSuccess: {
-        node: "LowerCaseAction",
+        node: "StringCaseConverter",
         uuid: 2,
         inputs: {
-            String: "{{node.1.output.String}}",
+            ["Input String"]: "{{node.1.output.Stdout}}",
+            ["Case Type"]: "Lowercase",
+        },
+        onSuccess: {
+            node: "SleepAction",
+            uuid: 3,
+            inputs: {
+                ["Sleep Duration"]: 5000,
+            },
+            onSuccess: {
+                node: "StringCaseConverter",
+                uuid: 4,
+                inputs: {
+                    ["Input String"]: "{{node.2.output.Converted string}}",
+                    ["Case Type"]: "Title Case",
+                },
+            },
         },
     },
 };
 
-executeWithAllEngines(payload, DESIGN).then((results) => {
-    Object.keys(results).forEach((ver) => {
-        console.info(`- Execution with engine ${ver} -> ${results[ver]}`);
-    });
-});
+executeChain(engineVersions, payload, DESIGN).then(outputs => console.info("Nodes executed with following engine versions:", Object.keys(outputs).join(", ")));
