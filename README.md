@@ -56,6 +56,60 @@ To keep iterating on your catalog with debug capabilities, use the `bundle:debug
 
 In the future this process will become more streamlined as we improve the external catalog development experience.
 
+### Handling breaking changes
+
+Breaking changes to a node's specification, such as adding an input, can "break" streams where they are used. We put break in quotes because it will not really break them, since if the catalog version is not updated or if the stream is not published everything will remain as it was. That being said, if users update their catalog versions they may end up with broken designs, for example if you added a mandatory input to a node the design is now missing that input and cannot be saved or published.
+
+This behavior can be intentional to prevent users from working with old node versions in their designs, in the case of security issues for example. However, this can be avoided by having two or more nodes classes that share the same specification name in the catalog.
+Node classes that share the same name in the specification, are considered different versions of the same node, allowing users to use any of them. Although we do not enforce it, we recommend that nodes classes that share the same name be different major versions of that node. __It is mandatory that these nodes have different class names or there will be conflicts.__
+
+If the goal is not to maintain the old and new nodes, but just keep backwards compatibility, then the old node can be marked as deprecated if its specification version is 3 or higher.
+
+```typescript
+export default new Catalog("example", "example", "1.0.0", NodeA, NodeAV2, NodeAV3)
+
+class NodeA extends Node {
+    specification = {
+        ...
+        name: "A",
+        version: {
+            major: 1,
+            ...
+        },
+        deprecated: true,
+        ...
+    }
+}
+class NodeAV2 extends Node {
+    specification = {
+        ...
+        name: "A",
+        version: {
+            major: 2,
+            ...
+        },
+        deprecated: false,
+        ...
+    }
+}
+class NodeAV3 extends Node {
+    specification = {
+        ...
+        name: "A",
+        version: {
+            major: 3,
+            ...
+        },
+        deprecated: false,
+        ...
+    }
+}
+```
+
+#### Maintaining documentation
+
+There should be a documentation file per node class. Considering the example above, there should exist 3 markdown files: NodeA.md, NodeAV2.md, NodeAV3.md.
+
 ## Publishing your catalog
 
 Publishing your catalog will happen automatically whenever a new tag is pushed. A GitHub action is set to bundle the catalog and upload it to a specified S3 storage bucket. You will need to update the [upload-to-s3.yml](./.github/workflows/upload-to-s3.yaml) file to get the correct information for your S3 storage.
