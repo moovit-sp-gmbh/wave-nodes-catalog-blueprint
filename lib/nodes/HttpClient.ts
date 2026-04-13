@@ -1,17 +1,21 @@
 import Node from "../Node";
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import { HttpMethod } from "hcloud-sdk/lib/interfaces/global/HttpMethod";
 import {
+    StreamNodeSpecificationDependendInput,
     StreamNodeSpecificationInputType,
     StreamNodeSpecificationOutputType,
-    StreamNodeSpecificationV2,
+    StreamNodeSpecificationV4,
 } from "hcloud-sdk/lib/interfaces/high5";
+import { Query } from "hcloud-sdk/lib/interfaces/high5/wave/dependentInputs";
 import https from "https";
 
-enum Input {
+export enum Input {
     URL = "URL",
     METHOD = "Method",
     HEADERS = "Headers",
     BODY = "Body",
+    QUERY_PARAMETERS = "Query Parameters",
     FAIL_ON_NON_2XX_RESPONSE = "Fail on non-2XX Response",
     FOLLOW_REDIRECTS = "Follow Redirects",
     IGNORE_INVALID_SSL_CERTIFICATE = "Ignore invalid SSL Certificate",
@@ -19,33 +23,25 @@ enum Input {
 }
 
 enum Output {
-    EXECUTION = "Execution",
-    STATUS_CODE = "Status Code",
+    STATUS_CODE = "Status code",
     HEADERS = "Headers",
     BODY = "Body",
-    DURATION = "Run time",
+    CURL = "Curl",
 }
 
-interface HttpResponse {
-    /* HTTP status code from the application server. Status codes include: 2xx: Successful responses(e.g., 200 OK, 201 Created, 204 No Content). 3xx: Redirection messages(e.g., 301 Moved Permanently). 4xx: Client error responses(e.g., 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found). 5xx: Server error responses(e.g., 500 Internal Server Error, 503 Service Unavailable) */
-    [Output.STATUS_CODE]: number;
-    /* HTTP response headers from the application server */
-    [Output.HEADERS]: object;
-    /* Response body from the application server. The output may be empty in scenarios like successful requests without content (204), HEAD requests, redirections, unmodified resources (304), client/server errors, or specific API designs */
-    [Output.BODY]: string | object;
-}
-
-export default class HttpClient extends Node {
-    specification: StreamNodeSpecificationV2 = {
-        specVersion: 2,
+export default class HttpClientAction extends Node {
+    specification: StreamNodeSpecificationV4 = {
+        specVersion: 4,
+        deprecated: false,
         name: "HTTP Client",
         description: "HTTP client for sending HTTP requests",
-        category: "Networking",
+        category: "Communication",
         version: {
-            major: 0,
+            major: 1,
             minor: 0,
-            patch: 1,
-            changelog: [],
+            patch: 0,
+            changelog: [
+            ],
         },
         author: {
             name: "",
@@ -64,23 +60,14 @@ export default class HttpClient extends Node {
                 name: Input.METHOD,
                 description: "Choose the HTTP method to send the request",
                 type: StreamNodeSpecificationInputType.STRING_SELECT,
-                /**
-                 * options keys will be displayed in the stream designer and
-                 * the values will be the input received by the node when executed
-                 */
-                options: {
-                    GET: "GET",
-                    POST: "POST",
-                    DELETE: "DELETE",
-                    PUT: "PUT",
-                },
-                example: "GET",
-                defaultValue: "POST",
+                options: Object.fromEntries(Object.values(HttpMethod).map((v) => [v, v])),
+                example: HttpMethod.GET,
+                defaultValue: HttpMethod.POST,
                 mandatory: true,
             },
             {
                 name: Input.HEADERS,
-                description: "Enter HTTP headers to be included with the request",
+                description: "Enter HTTP headers to be included with the request",
                 type: StreamNodeSpecificationInputType.STRING_MAP,
                 example: { Authorization: "Bearer your_bearer_token" },
             },
@@ -89,6 +76,23 @@ export default class HttpClient extends Node {
                 description: "Enter the HTTP request body content",
                 type: StreamNodeSpecificationInputType.STRING_LONG,
                 example: '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
+                if: {
+                    method: {
+                        $in: [
+                            HttpMethod.POST,
+                            HttpMethod.PUT,
+                            HttpMethod.PATCH,
+                            HttpMethod.DELETE
+                        ]
+                    }
+                } as Query<{ method: HttpMethod }>,
+            } as StreamNodeSpecificationDependendInput,
+            {
+                name: Input.QUERY_PARAMETERS,
+                description: "Enter query parameters to be included with the request",
+                type: StreamNodeSpecificationInputType.STRING_MAP,
+                example: { userId: "123" },
+                advanced: true,
             },
             {
                 name: Input.FAIL_ON_NON_2XX_RESPONSE,
@@ -97,65 +101,86 @@ export default class HttpClient extends Node {
                 type: StreamNodeSpecificationInputType.BOOLEAN,
                 example: false,
                 defaultValue: false,
+                advanced: true,
             },
             {
                 name: Input.FOLLOW_REDIRECTS,
                 description:
-                    "Enable this option if the node should follow HTTP redirect requests. If disabled and a redirect request is sent, the node will fail.",
+                    "Enable this option if the node should follow HTTP redirect requests. If disabled and a redirect request is sent, the node will fail",
                 type: StreamNodeSpecificationInputType.BOOLEAN,
                 example: false,
                 defaultValue: true,
+                advanced: true,
             },
             {
                 name: Input.IGNORE_INVALID_SSL_CERTIFICATE,
                 description:
-                    "Enable this option to allow the node to continue with HTTP requests even if the SSL certificate of the application server is invalid. If disabled and an invalid certificate is detected, the node will fail.",
+                    "Enable to allow HTTP requests even if the server's SSL certificate is invalid. If disabled, invalid certificates cause the node to fail",
                 type: StreamNodeSpecificationInputType.BOOLEAN,
                 example: false,
                 defaultValue: false,
+                advanced: true,
             },
             {
                 name: Input.TIMEOUT,
-                description: "Enter the number of seconds the HTTP node should wait for a response before it times out and fails.",
+                description:
+                    "Enter the number of seconds the HTTP node should wait for a response before it times out and fails (default is 60s)",
                 type: StreamNodeSpecificationInputType.NUMBER,
                 example: 10,
                 defaultValue: 60,
+                advanced: true,
             },
         ],
         outputs: [
             {
-                name: Output.EXECUTION,
-                description: "Response data - status code, headers and body",
-                type: StreamNodeSpecificationOutputType.JSON,
+                name: Output.STATUS_CODE,
+                description:
+                    "Returns the HTTP status code from the application server. Status codes include: 2xx: Successful responses(e.g., 200 OK, 201 Created, 204 No Content). 3xx: Redirection messages(e.g., 301 Moved Permanently). 4xx: Client error responses(e.g., 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found). 5xx: Server error responses(e.g., 500 Internal Server Error, 503 Service Unavailable) ",
+                type: StreamNodeSpecificationOutputType.NUMBER,
+                example: 200,
+            },
+            {
+                name: Output.HEADERS,
+                description: "Returns the HTTP response headers from the application server",
+                type: StreamNodeSpecificationOutputType.STRING_MAP,
                 example: {
-                    [Output.STATUS_CODE]: 200,
-                    [Output.HEADERS]: {
-                        "Content-Type": "application/json",
-                        "Content-Length": "123",
-                        Server: "Apache/2.4.1",
-                        "Set-Cookie": "sessionId=abc123; Path=/; HttpOnly",
-                        Date: "Wed, 21 Oct 2024 07:28:00 GMT",
-                        Connection: "keep-alive",
-                    },
-                    [Output.BODY]: '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
+                    "Content-Type": "application/json",
+                    "Content-Length": "123",
+                    Server: "Apache/2.4.1",
+                    "Set-Cookie": "sessionId=abc123; Path=/; HttpOnly",
+                    Date: "Wed, 21 Oct 2023 07:28:00 GMT",
+                    Connection: "keep-alive",
                 },
             },
             {
-                name: Output.DURATION,
-                description: "Returns the total amount of time taken by the node to execute the node in milliseconds",
-                type: StreamNodeSpecificationOutputType.NUMBER,
-                example: 200,
+                name: Output.BODY,
+                description:
+                    "Returns the response body from the application server. The output may be empty in scenarios like successful requests without content (204), HEAD requests, redirections, unmodified resources (304), client/server errors, or specific API designs.",
+                type: StreamNodeSpecificationOutputType.STRING,
+                example: '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
+            },
+            {
+                name: Output.CURL,
+                description: "Returns the cURL command with the data from the node",
+                type: StreamNodeSpecificationOutputType.STRING,
+                example: {
+                    name: "Curl",
+                    value: `curl -X POST \
+      -H "Authorization: Bearer your-api-key-here" \
+      -H "Content-Type: application/json" \
+      -d '{ "name": "helmut.cloud", "start": "2023-04-15T10:00:00", "end": "2023-04-15T16:00:00" }' \
+      https://api.example.com/`,
+                },
             },
         ],
     };
 
     async execute(): Promise<void> {
-        const startTime = performance.now();
-
-        const method = this.wave.inputs.getInputValueByInputName(Input.METHOD) as string;
         const url = this.wave.inputs.getInputValueByInputName(Input.URL) as string;
+        const method = this.wave.inputs.getInputValueByInputName(Input.METHOD) as string;
         const headers = this.wave.inputs.getInputValueByInputName(Input.HEADERS) as Record<string, string | string[]> | undefined;
         const data = this.wave.inputs.getInputValueByInputName(Input.BODY) as string | undefined;
+        const queryParameters = this.wave.inputs.getInputValueByInputName(Input.QUERY_PARAMETERS) as Record<string, string> | undefined;
         const timeout = this.wave.inputs.getInputValueByInputName(Input.TIMEOUT) as number;
         const ignoreSSLCert = this.wave.inputs.getInputValueByInputName(Input.IGNORE_INVALID_SSL_CERTIFICATE) as boolean;
         const failOnNon2XXResponse = this.wave.inputs.getInputValueByInputName(Input.FAIL_ON_NON_2XX_RESPONSE) as boolean;
@@ -163,12 +188,17 @@ export default class HttpClient extends Node {
 
         const requestConfig: AxiosRequestConfig = {
             method: method,
-            url: url,
+            url: url.trim(),
             headers: headers,
             data: data,
+            params: queryParameters,
             timeout: timeout * 1000,
             transformResponse: (res) => res,
         };
+
+        if (requestConfig.data === "") {
+            requestConfig.data = undefined;
+        }
 
         if (ignoreSSLCert) {
             const agent = new https.Agent({ rejectUnauthorized: false });
@@ -192,47 +222,50 @@ export default class HttpClient extends Node {
             requestConfig.maxRedirects = 0;
         }
 
+        this.wave.outputs.setOutput(Output.CURL, this.wave.axiosHelper.convertRequestToCurl(requestConfig));
+
         try {
             const res = await axios.request(requestConfig);
 
-            const output = {
-                [Output.STATUS_CODE]: res.status,
-                [Output.HEADERS]: res.headers,
-                [Output.BODY]: this.parseBody(res),
-            } as HttpResponse;
-            this.wave.outputs.setOutput(Output.EXECUTION, output);
+            const [body, type] = this.parseBody(res);
+
+            this.wave.outputs.setOutput(Output.STATUS_CODE, res.status);
+            this.wave.outputs.setOutput(Output.HEADERS, res.headers);
+            this.wave.outputs.setOutput(Output.BODY, body, type);
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
-                const output = {
-                    [Output.STATUS_CODE]: err.response?.status,
-                    [Output.HEADERS]: err.response?.headers,
-                    [Output.BODY]: err.response?.data,
-                } as HttpResponse;
-                this.wave.outputs.setOutput(Output.EXECUTION, output);
+                this.wave.outputs.setOutput(Output.STATUS_CODE, err.response?.status);
+                this.wave.outputs.setOutput(Output.HEADERS, err.response?.headers);
+                this.wave.outputs.setOutput(Output.BODY, err.response?.data);
                 throw new Error(err.name + ": " + err.message);
             } else {
                 throw err;
             }
-        } finally {
-            this.wave.outputs.setOutput(Output.DURATION, performance.now() - startTime);
         }
     }
 
-    parseBody(response: AxiosResponse): string | object {
+    parseBody(response: AxiosResponse): [string | object, StreamNodeSpecificationOutputType] {
         const contentType = response.headers["content-type"];
         if (!contentType) {
-            return response.data;
+            return [response.data, StreamNodeSpecificationOutputType.ANY];
         }
 
         if (contentType.includes("application/json")) {
             try {
-                return JSON.parse(response.data);
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            } catch (_) {
-                return response.data;
+                return [JSON.parse(response.data), StreamNodeSpecificationOutputType.JSON];
+            } catch {
+                return [response.data, StreamNodeSpecificationOutputType.ANY];
             }
         }
 
-        return response.data;
+        if (contentType.includes("application/xml") || contentType.includes("text/xml")) {
+            return [response.data, StreamNodeSpecificationOutputType.XML];
+        }
+
+        if (contentType.includes("application/html") || contentType.includes("text/html")) {
+            return [response.data, StreamNodeSpecificationOutputType.HTML];
+        }
+
+        return [response.data, StreamNodeSpecificationOutputType.ANY];
     }
 }
