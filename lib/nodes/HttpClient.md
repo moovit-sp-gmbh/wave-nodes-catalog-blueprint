@@ -34,7 +34,7 @@ inputs:
         value: "Authorization: Bearer abc123"
   - name: Body
     description: |
-      Enter the content to be sent in the request body (typically used with POST, PUT, or PATCH requests)
+      Enter the content to be sent in the request body. This input is only shown when the Method is POST, PUT, PATCH or DELETE
     type: STRING_LONG
     mandatory: false
     example:
