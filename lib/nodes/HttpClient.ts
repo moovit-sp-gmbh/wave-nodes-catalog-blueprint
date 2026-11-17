@@ -76,16 +76,13 @@ export default class HttpClientAction extends Node {
                 description: "Enter the HTTP request body content",
                 type: StreamNodeSpecificationInputType.STRING_LONG,
                 example: '{ "userId": 123, "userName": "HelmutCloud", "email": "hellofrom@helmut.cloud" }',
+                // Dependent input: only shown when the "Method" input is one of the listed values.
+                // The query keys are the names of other inputs of this node.
                 if: {
-                    method: {
-                        $in: [
-                            HttpMethod.POST,
-                            HttpMethod.PUT,
-                            HttpMethod.PATCH,
-                            HttpMethod.DELETE
-                        ]
-                    }
-                } as Query<{ method: HttpMethod }>,
+                    [Input.METHOD]: {
+                        $in: [HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH, HttpMethod.DELETE],
+                    },
+                } as Query<{ [Input.METHOD]: HttpMethod }>,
             } as StreamNodeSpecificationDependendInput,
             {
                 name: Input.QUERY_PARAMETERS,
