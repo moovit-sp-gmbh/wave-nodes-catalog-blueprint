@@ -1,5 +1,8 @@
 import { AxiosRequestHeaders, AxiosResponse } from "axios";
-import HttpClient from "../../lib/nodes/HttpClient";
+import { HttpMethod } from "hcloud-sdk/lib/interfaces/global/HttpMethod";
+import { matchesQuery, Query } from "hcloud-sdk/lib/interfaces/high5/wave/dependentInputs";
+import { validateQuery } from "hcloud-sdk/lib/interfaces/high5/wave/dependentInputsValidation";
+import HttpClient, { Input } from "../../lib/nodes/HttpClient";
 
 describe("HttpClient", () => {
     it("should parse body according to response headers", () => {
@@ -48,5 +51,27 @@ describe("HttpClient", () => {
         const testResult = HttpClient.prototype.parseBody(response);
 
         expect(testResult).toEqual(response.data);
+    });
+});
+
+describe("HttpClient dependent inputs", () => {
+    const inputs = new HttpClient().specification.inputs ?? [];
+    const conditionOf = (name: Input): Query => {
+        const condition = inputs.find((input) => input.name === name)?.if;
+        if (!condition) throw new Error(`Input "${name}" has no "if" condition`);
+        return condition;
+    };
+
+    it("should only define well formed conditions", () => {
+        inputs.filter((input) => input.if).forEach((input) => expect(validateQuery(input.if)).toEqual({ valid: true }));
+    });
+
+    it("should show the body only for methods that send a request body", () => {
+        const body = conditionOf(Input.BODY);
+
+        [HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH, HttpMethod.DELETE].forEach((method) =>
+            expect(matchesQuery({ [Input.METHOD]: method }, body)).toBe(true)
+        );
+        expect(matchesQuery({ [Input.METHOD]: HttpMethod.GET }, body)).toBe(false);
     });
 });
