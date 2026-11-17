@@ -80,7 +80,7 @@ This class should be exportable by default to be available for use from outside:
 ```typescript
 export default class SomeAction extends Node {
     wave!: Wave; // This property will be inserted at runtime don't implement it
-    specification: StreamNodeSpecificationV2 = { ... };
+    specification: StreamNodeSpecificationV4 = { ... };
     execute(): Promise<void> { ... };
 }
 ```
@@ -92,17 +92,35 @@ Also, the input data that the node expects and the expected results that will be
 For more details, you can view the components of the specification in the SDK:
 
 ```typescript
-import { StreamNodeSpecificationV2 } from "hcloud-sdk/lib/interfaces/high5";
+import { StreamNodeSpecificationV4 } from "hcloud-sdk/lib/interfaces/high5";
 ```
 
 ### Version of the specification
 
-At this moment, version 2 of the node specification is relevant.
+At this moment, version 4 of the node specification is relevant.
 To specify this - please use the **specVersion** field:
 
 ```typescript
-specification: StreamNodeSpecificationV2 = {
-    specVersion: 2;
+specification: StreamNodeSpecificationV4 = {
+    specVersion: 4,
+    ...
+}
+```
+
+Compared to version 2, the specification gained the following:
+- version 3 added the mandatory **deprecated** field (see [Deprecation](#deprecation));
+- version 4 added [dependent input fields](#dependent-input-fields): every input can define an **if** condition that decides, based on the values of the other inputs, whether the input is shown in the Stream Designer Studio.
+
+Everything else (name, description, category, version, author, tags, outputs, additional connectors, ...) works the same as in version 2.
+
+### Deprecation
+
+The **deprecated** field is mandatory since specification version 3. Set it to `true` to mark a node as deprecated, e.g. when it is replaced by a newer node:
+
+```typescript
+specification: StreamNodeSpecificationV4 = {
+    ...
+    deprecated: false,
     ...
 }
 ```
@@ -113,7 +131,7 @@ In order to specify a name for the node - please use the **name** field.
 This name will be used in the Stream Designer Studio and on other pages of the helmut.cloud:
 
 ```typescript
-specification: StreamNodeSpecificationV2 = {
+specification: StreamNodeSpecificationV4 = {
     name: "Prime numbers";
     ...
 }
@@ -124,7 +142,7 @@ specification: StreamNodeSpecificationV2 = {
 A more detailed description of the function performed by the current node should be placed in the **description** text field:
 
 ```typescript
-specification: StreamNodeSpecificationV2 = {
+specification: StreamNodeSpecificationV4 = {
     ...
     description: "Calculates a series of prime numbers up to the given position and returns the last value in this series";
     ...
@@ -136,7 +154,7 @@ specification: StreamNodeSpecificationV2 = {
 Please specify the **category** to which the current node will belong to:
 
 ```typescript
-specification: StreamNodeSpecificationV2 = {
+specification: StreamNodeSpecificationV4 = {
     ...
     category: "Math operations";
     ...
@@ -155,7 +173,7 @@ This type includes the following fields:
 ```typescript
 import { StreamSemanticVersion } from "hcloud-sdk/lib/interfaces/high5";
 
-specification: StreamNodeSpecificationV2 = {
+specification: StreamNodeSpecificationV4 = {
     ...
     version: {
         major: 1,
@@ -178,7 +196,7 @@ This type includes the following fields:
 ```typescript
 import { StreamNodeSpecificationAuthor } from "hcloud-sdk/lib/interfaces/high5";
 
-specification: StreamNodeSpecificationV2 = {
+specification: StreamNodeSpecificationV4 = {
     ...
     author: {
         name: "John Smith",
@@ -198,7 +216,7 @@ You can specify an array of tags that must contain one of the listed values (thi
 ```typescript
 import { StreamNodeSpecificationTag } from "hcloud-sdk/lib/interfaces/high5";
 
-specification: StreamNodeSpecificationV2 = {
+specification: StreamNodeSpecificationV4 = {
     ...
     tag: [StreamNodeSpecificationTag.PREVIEW];
     ...
@@ -295,6 +313,104 @@ advanced: false,
 
 Where field **mandatory** means that the current input parameter is mandatory.
 And the **advanced** field refers to the display of the current parameter in the user interface - it “hides” the input field in the nodes configuration panel under the advanced accordion.
+
+#### Dependent input fields
+
+Since specification version 4, every input can be a **dependent input**: an input that is only shown in the node configuration panel when the values of other inputs match a condition.
+This lets a node show only the inputs that make sense for the current configuration, for example a request body only for HTTP methods that send one, or the credentials only for the selected authentication type.
+
+Dependent inputs use the **StreamNodeSpecificationDependendInput** type, which adds an optional **if** field to a regular input. The condition is a **Query** object that is defined in the SDK:
+
+```typescript
+import { StreamNodeSpecificationDependendInput } from "hcloud-sdk/lib/interfaces/high5";
+import { Query } from "hcloud-sdk/lib/interfaces/high5/wave/dependentInputs";
+```
+
+The keys of a query are the **names of other inputs** of the same node. Use the values of your `Input` enum as computed keys so that the names stay in sync. An input without an **if** field is always shown.
+
+The sample HttpClient node shows the **Body** input only for methods that send a request body:
+
+```typescript
+{
+    name: Input.BODY,
+    description: "Enter the HTTP request body content",
+    type: StreamNodeSpecificationInputType.STRING_LONG,
+    example: '{ "userId": 123 }',
+    if: {
+        [Input.METHOD]: {
+            $in: [HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH, HttpMethod.DELETE],
+        },
+    } as Query<{ [Input.METHOD]: HttpMethod }>,
+} as StreamNodeSpecificationDependendInput,
+```
+
+The generic parameter of **Query** describes the inputs the condition refers to (input name → value type). It lets TypeScript check the operators and values you use.
+
+##### Operators
+
+A field condition is either a plain value (shorthand for `$eq`) or an object with one or more of these operators:
+
+| Operator | Applies to | Matches when the input value ... |
+| --- | --- | --- |
+| `$eq`, `$ne` | any value | is equal / not equal to the given value |
+| `$gt`, `$gte`, `$lt`, `$lte` | numbers, strings, dates | is greater than / greater or equal / less than / less or equal |
+| `$in`, `$nin` | any value | is / is not one of the values in the given array |
+| `$contains`, `$startsWith`, `$endsWith` | strings | contains / starts with / ends with the given text |
+| `$regex` | strings | matches the given regular expression |
+| `$exists` | any value | is set, i.e. not `null` / `undefined` (`$exists: true`) * |
+| `$type` | any value | is of the given type: `"string"`, `"number"`, `"boolean"` or `"object"` |
+
+\* `$exists: false` currently never matches. To check that an input is **not** set, negate the condition instead: `{ $not: { [Input.NAME]: { $exists: true } } }`. Apart from `$eq` and `$ne`, all operators fail when the input has no value.
+
+Several operators in one field condition must all match. Conditions on several inputs in one query must also all match.
+
+Conditions can be combined with the logical operators `$and`, `$or`, `$nor` (arrays of queries) and `$not` (a single query).
+
+##### Examples
+
+Show an input only when a boolean input is enabled:
+
+```typescript
+if: {
+    [Input.USE_PROXY]: true,
+} as Query<{ [Input.USE_PROXY]: boolean }>,
+```
+
+Show an input when a select input has a given value **or** another input is filled in:
+
+```typescript
+if: {
+    $or: [
+        { [Input.AUTHENTICATION]: "Basic" },
+        { [Input.USERNAME]: { $exists: true, $ne: "" } },
+    ],
+} as Query<{ [Input.AUTHENTICATION]: string; [Input.USERNAME]: string }>,
+```
+
+Show an input only for a range of numbers:
+
+```typescript
+if: {
+    [Input.RETRIES]: { $gt: 0, $lte: 10 },
+} as Query<{ [Input.RETRIES]: number }>,
+```
+
+Hide an input for a given pattern by negating a condition. For example, an HTTP node could hide an SSL option for plain `http://` URLs. Negating the condition keeps the input visible for `https://` URLs and for URLs that are built from wildcards:
+
+```typescript
+if: {
+    $not: {
+        [Input.URL]: { $startsWith: "http://" },
+    },
+} as Query<{ [Input.URL]: string }>,
+```
+
+##### Things to keep in mind
+
+- Do not rely on a hidden dependent input having a value. Treat it as optional in the **execute()** method and fall back to a sensible default, or only read it when the condition it depends on is met.
+- The wave engine does not evaluate the **if** condition: a **mandatory** dependent input is still required at runtime, even while it is hidden. Only make a dependent input mandatory when it is always shown in configurations where the node can run.
+- Conditions are evaluated in the Stream Designer Studio on the values entered there, not on the values that wildcards resolve to at runtime. Write conditions so that inputs containing wildcards still show the inputs that may be needed, as the `$not` example above does.
+- The SDK provides **validateQuery** (`hcloud-sdk/lib/interfaces/high5/wave/dependentInputsValidation`) to check that a query is well formed and **matchesQuery** (`hcloud-sdk/lib/interfaces/high5/wave/dependentInputs`) to evaluate a query against a set of input values. Both are useful in unit tests.
 
 ### Outputs
 
